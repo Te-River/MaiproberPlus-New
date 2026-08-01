@@ -47,6 +47,18 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+            // 本地构建签名：读环境变量 LOCAL_KEYSTORE_PATH / LOCAL_KEYSTORE_ALIAS
+            // / LOCAL_STORE_PASSWORD / LOCAL_KEY_PASSWORD；未配置则构建 unsigned release。
+            // CI 走 -Pandroid.injected.signing.* 注入，与本配置互不冲突。
+            val keystorePath = System.getenv("LOCAL_KEYSTORE_PATH")
+            if (!keystorePath.isNullOrEmpty()) {
+                signingConfig = signingConfigs.create("localRelease") {
+                    storeFile = file(keystorePath)
+                    storePassword = System.getenv("LOCAL_STORE_PASSWORD") ?: ""
+                    keyAlias = System.getenv("LOCAL_KEYSTORE_ALIAS") ?: "release"
+                    keyPassword = System.getenv("LOCAL_KEY_PASSWORD") ?: ""
+                }
+            }
         }
 
         getByName("debug") {

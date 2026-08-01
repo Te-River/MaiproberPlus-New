@@ -9,3 +9,8 @@
 .cxx
 local.properties
 /.kotlin
+
+# 本地构建产物与签名材料（build-local-release.sh 生成）
+/release/
+/android/local-release.keystore
+/android/local-release.keystore.brf
