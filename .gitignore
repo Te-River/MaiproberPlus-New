@@ -10,10 +10,10 @@
 local.properties
 /.kotlin
 
-# 本地构建产物与签名材料（build-local-release.sh / .ps1 生成）
+# 本地构建产物与签名材料（build.ps1 / build.sh 生成）
 /release/
-/build-local-release.ps1
-/build-local-release.sh
+/build.ps1
+/build.sh
 /android/local-release.keystore
 /android/local-release.keystore.brf
 /android/release-release.keystore
