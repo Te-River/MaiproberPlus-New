@@ -1,6 +1,7 @@
 package io.github.skydynamic.maiproberplus.core.config
 
 import android.content.Context
+import android.util.Log
 import io.github.skydynamic.maiproberplus.Application.Companion.application
 import io.github.skydynamic.maiproberplus.core.data.chuni.ChuniEnums
 import io.github.skydynamic.maiproberplus.core.data.maimai.MaimaiEnums
@@ -33,14 +34,25 @@ open class ConfigManager(context: Context) {
 
     private fun read() {
         val configInputStream = application.getFilesDirInputStream("config.json")
-        config = JSON.decodeFromStream(configInputStream)
-        configInputStream.close()
+        try {
+            config = JSON.decodeFromStream(configInputStream)
+        } catch (e: Exception) {
+            Log.e("ConfigManager", "读取 config.json 失败，使用默认配置: ${e.message}")
+            config = ConfigStorage()
+        } finally {
+            configInputStream.close()
+        }
     }
 
     fun save() {
         val configOutputStream = application.getFilesDirOutputStream("config.json")
-        JSON.encodeToStream(config, configOutputStream)
-        configOutputStream.close()
+        try {
+            JSON.encodeToStream(config, configOutputStream)
+        } catch (e: Exception) {
+            Log.e("ConfigManager", "写入 config.json 失败: ${e.message}")
+        } finally {
+            configOutputStream.close()
+        }
     }
 }
 

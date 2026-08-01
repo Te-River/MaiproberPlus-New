@@ -101,7 +101,8 @@ fun AppContent() {
                 val downloadFile = Environment.getExternalStoragePublicDirectory(
                     Environment.DIRECTORY_DOWNLOADS
                 )
-                val newVersionFile = downloadFile.resolve(release.assets.first().name)
+                val asset = release.assets.firstOrNull() ?: return@LaunchedEffect
+                val newVersionFile = downloadFile.resolve(asset.name)
                 if (newVersionFile.exists()) {
                     GlobalViewModel.newVersionApkUri = FileProvider.getUriForFile(
                         application, application.packageName + ".fileprovider", newVersionFile
@@ -207,7 +208,7 @@ fun AppContent() {
 
     when {
         GlobalViewModel.showMessageDialog -> {
-            InfoDialog(GlobalViewModel.localMessage.value!!) {
+            InfoDialog(GlobalViewModel.localMessage.value ?: "") {
                 GlobalViewModel.showMessageDialog = false
             }
         }
@@ -215,9 +216,11 @@ fun AppContent() {
             CheckUpdateDialog(
                 release = GlobalViewModel.latestRelease,
                 onRequest = {
+                    val release = GlobalViewModel.latestRelease ?: return@onRequest
+                    val asset = release.assets.firstOrNull() ?: return@onRequest
                     application.createDownloadTask(
-                        "https://ghfast.top/${GlobalViewModel.latestRelease!!.assets.first().url}",
-                        GlobalViewModel.latestRelease!!.assets.first().name
+                        "https://ghfast.top/${asset.url}",
+                        asset.name
                     )
                     GlobalViewModel.showUpdateDialog = false
                 }

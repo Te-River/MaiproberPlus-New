@@ -36,8 +36,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
 
-val config = application.configManager.config
-
 val client = HttpClient(CIO) {
     install(ContentNegotiation) {
         json(Json {
@@ -77,6 +75,7 @@ fun sendMessageToUi(message: String) {
 }
 
 suspend fun getMaimaiScoreData(authUrl: String) : List<MaimaiScoreEntity> {
+    val config = application.configManager.config
     val scores = mutableListOf<MaimaiScoreEntity>()
     fetchMaimaiScorePage(authUrl) { diff, body ->
         scores.addAll(ParseScorePageUtil.parseMaimai(body, diff))
@@ -91,6 +90,7 @@ suspend fun fetchMaimaiScorePage(
     authUrl: String,
     processBody: suspend (MaimaiEnums.Difficulty, String) -> Unit
 ) {
+    val config = application.configManager.config
     client.get(authUrl) {
         getDefaultWahlapRequestBuilder()
     }
@@ -139,6 +139,7 @@ suspend fun fetchMaimaiScorePage(
 }
 
 suspend fun getChuniScoreData(authUrl: String) : List<ChuniScoreEntity> {
+    val config = application.configManager.config
     val scores = mutableListOf<ChuniScoreEntity>()
     fetchChuniScores(authUrl) { diff, body ->
         scores.addAll(ParseScorePageUtil.parseChuni(body, diff))
@@ -153,6 +154,7 @@ suspend fun fetchChuniScores(
     authUrl: String,
     processBody: suspend (ChuniEnums.Difficulty, String) -> Unit
 ) {
+    val config = application.configManager.config
     val result = client.get(authUrl) {
         getDefaultWahlapRequestBuilder()
     }

@@ -101,7 +101,11 @@ public class LocalVpnService extends VpnService implements Runnable {
             m_DnsProxy = new DnsProxy();
             m_DnsProxy.start();
         } catch (IOException e) {
-            throw new RuntimeException(e);
+            Log.e(TAG, "Failed to start local proxy", e);
+            IsRunning = false;
+            GlobalViewModel.INSTANCE.setVpnServiceRunning(false);
+            dispose();
+            return START_NOT_STICKY;
         }
         m_VPNThread = new Thread(this, "VPNServiceThread");
         m_VPNThread.start();

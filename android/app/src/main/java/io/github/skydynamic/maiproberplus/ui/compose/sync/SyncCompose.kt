@@ -423,6 +423,12 @@ fun SyncCompose() {
 }
 
 private fun startVpnService(activity: Activity) {
+    val prepareIntent = VpnService.prepare(activity)
+    if (prepareIntent != null) {
+        // 用户尚未授权，应通过 launcher 请求；这里直接启动会无效
+        activity.startActivity(prepareIntent)
+        return
+    }
     val intent = Intent(activity, LocalVpnService::class.java)
     activity.startService(intent)
 }

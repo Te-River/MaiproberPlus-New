@@ -94,7 +94,7 @@ object ParseScorePageUtil {
                 continue
             }
 
-            val musicScoreNum = musicScore.replace("%", "").toFloat()
+            val musicScoreNum = musicScore.replace("%", "").toFloatOrNull() ?: continue
             val musicDxScoreNum = extractDxScoreNum(musicDxScore)
 
             val musicClearTypes = musicCard.getElementsByClass("h_30 f_r")
@@ -119,9 +119,11 @@ object ParseScorePageUtil {
             var musicLevel = 0f
             var musicVersion = 0
             if (isDeluxe) {
+                if (difficulty.diffIndex >= res.difficulties.dx.size) continue
                 musicLevel = res.difficulties.dx[difficulty.diffIndex].levelValue
                 musicVersion = res.difficulties.dx[difficulty.diffIndex].version
             } else {
+                if (difficulty.diffIndex >= res.difficulties.standard.size) continue
                 musicLevel = res.difficulties.standard[difficulty.diffIndex].levelValue
                 musicVersion = res.difficulties.standard[difficulty.diffIndex].version
             }
@@ -190,7 +192,7 @@ object ParseScorePageUtil {
             )
 
             val musicScore = highScore[0].tagName("span").text()
-            val musicScoreNum = musicScore.replace("分数：", "").replace(",", "").toInt()
+            val musicScoreNum = musicScore.replace("分数：", "").replace(",", "").toIntOrNull() ?: continue
 
             var musicPlayTime = ""
             val musicDifficulty = if (difficulty == ChuniEnums.Difficulty.RECENT) {
@@ -214,6 +216,7 @@ object ParseScorePageUtil {
             if (res.disabled == true) { continue }
 
             val musicLevel = if (musicDifficulty != ChuniEnums.Difficulty.WORLDSEND) {
+                if (musicDifficulty.diffIndex >= res.difficulties.size) continue
                 res.difficulties[musicDifficulty.diffIndex].levelValue
             } else {
                 res.difficulties[0].levelValue

@@ -111,11 +111,66 @@ class Application : Application() {
         super.onCreate()
         createNotificationChannel()
         application = this
-        configManager = ConfigManager(this)
-        db = Room.databaseBuilder(this, AppDatabase::class.java, "maiproberplus")
-            .addMigrations(DatabaseMigration.MIGRATION_1_2)
-            .build()
-        this.initProberContext()
+
+        // --- configManager: guard against corrupt config.json ---
+        try {
+            configManager = ConfigManager(this)
+        } catch (e: Throwable) {
+            Log.e("App", "ConfigManager initialization failed (config.json may be corrupt)", e)
+            // ConfigManager's constructor reads config.json on init and will throw again
+            // if the file stays corrupt. Delete the offending file so the retry below
+            // sees no file and writes fresh defaults instead of decoding the bad JSON.
+            try { File(filesDir, "config.json").delete() } catch (_: Throwable) {}
+            try {
+                configManager = ConfigManager(this)
+            } catch (e2: Throwable) {
+                Log.e("App", "ConfigManager retry also failed; using default-only placeholder", e2)
+                // Last-resort: rebuild the file absent, then instantiate so the base init
+                // takes the fresh-defaults branch (createNewFile + save) instead of decoding.
+                // The anonymous init then pins config to a pristine ConfigStorage() placeholder.
+                try { File(filesDir, "config.json").delete() } catch (_: Throwable) {}
+                try {
+                    configManager = object : ConfigManager(this) {
+                        init { config = ConfigStorage() }
+                    }
+                } catch (e3: Throwable) {
+                    // Storage truly unavailable: leave configManager lateinit-uninitialized.
+                    // onCreate still completes; later access surfaces a diagnosable
+                    // UninitializedPropertyAccessException rather than crashing app startup.
+                    Log.e("App", "ConfigManager placeholder also failed; left uninitialized", e3)
+                }
+            }
+        }
+
+        // --- db: guard against Room initialization failure ---
+        try {
+            db = Room.databaseBuilder(this, AppDatabase::class.java, "maiproberplus")
+                .addMigrations(DatabaseMigration.MIGRATION_1_2)
+                .build()
+        } catch (e: Throwable) {
+            Log.e("App", "AppDatabase initialization failed; db will be unavailable", e)
+            // Retry once so late-init has a chance; if this also fails, db stays lateinit
+            // and any later access surfaces a clear UninitializedPropertyAccessException
+            // instead of crashing the whole Application onCreate path.
+            try {
+                db = Room.databaseBuilder(this, AppDatabase::class.java, "maiproberplus")
+                    .addMigrations(DatabaseMigration.MIGRATION_1_2)
+                    .fallbackToDestructiveMigration()
+                    .build()
+            } catch (e2: Throwable) {
+                Log.e("App", "AppDatabase retry initialization also failed", e2)
+            }
+        }
+
+        // --- proberContext: guard against init failure ---
+        try {
+            this.initProberContext()
+        } catch (e: Throwable) {
+            Log.e("App", "initProberContext failed, using fallback ProberContext", e)
+            proberContext = object : ProberContext {
+                override fun requireConfig(): ConfigStorage = ConfigStorage()
+            }
+        }
     }
 
     private fun createNotificationChannel() {
