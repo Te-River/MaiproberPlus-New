@@ -14,3 +14,4 @@ local.properties
 /release/
 /android/local-release.keystore
 /android/local-release.keystore.brf
+/android/release-release.keystore
