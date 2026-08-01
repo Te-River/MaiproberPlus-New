@@ -101,15 +101,17 @@ fun AppContent() {
                 val downloadFile = Environment.getExternalStoragePublicDirectory(
                     Environment.DIRECTORY_DOWNLOADS
                 )
-                val asset = release.assets.firstOrNull() ?: return@LaunchedEffect
-                val newVersionFile = downloadFile.resolve(asset.name)
-                if (newVersionFile.exists()) {
-                    GlobalViewModel.newVersionApkUri = FileProvider.getUriForFile(
-                        application, application.packageName + ".fileprovider", newVersionFile
-                    )
-                    GlobalViewModel.showInstallApkDialog = true
-                } else {
-                    GlobalViewModel.setLatestReleaseAndShowDialog(release)
+                val asset = release.assets.firstOrNull()
+                if (asset != null) {
+                    val newVersionFile = downloadFile.resolve(asset.name)
+                    if (newVersionFile.exists()) {
+                        GlobalViewModel.newVersionApkUri = FileProvider.getUriForFile(
+                            application, application.packageName + ".fileprovider", newVersionFile
+                        )
+                        GlobalViewModel.showInstallApkDialog = true
+                    } else {
+                        GlobalViewModel.setLatestReleaseAndShowDialog(release)
+                    }
                 }
             } else {
                 Log.i("checkUpdate", "No new release found")
@@ -216,13 +218,15 @@ fun AppContent() {
             CheckUpdateDialog(
                 release = GlobalViewModel.latestRelease,
                 onRequest = {
-                    val release = GlobalViewModel.latestRelease ?: return@onRequest
-                    val asset = release.assets.firstOrNull() ?: return@onRequest
-                    application.createDownloadTask(
-                        "https://ghfast.top/${asset.url}",
-                        asset.name
-                    )
-                    GlobalViewModel.showUpdateDialog = false
+                    GlobalViewModel.latestRelease?.let { release ->
+                        release.assets.firstOrNull()?.let { asset ->
+                            application.createDownloadTask(
+                                "https://ghfast.top/${asset.url}",
+                                asset.name
+                            )
+                            GlobalViewModel.showUpdateDialog = false
+                        }
+                    }
                 }
             ) {
                 GlobalViewModel.showUpdateDialog = false
