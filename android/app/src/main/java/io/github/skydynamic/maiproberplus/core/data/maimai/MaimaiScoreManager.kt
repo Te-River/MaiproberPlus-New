@@ -11,13 +11,15 @@ import kotlinx.coroutines.runBlocking
 
 object MaimaiScoreManager {
     suspend fun writeMaimaiScoreCache(data: List<MaimaiScoreEntity>) {
+        val threshold = application.configManager.config.lxnsRomVersionThreshold
         val dao = application.db.maimaiScoreDao()
         if (dao.getMusicScoreCount() == 0) {
-            dao.insertAll(data)
+            dao.insertAll(data.map { it.withIsOld(threshold) })
         } else {
             data.forEach {
-                if (!dao.exists(it.title, it.diff, it.type, it.achievement, it.dxScore)) {
-                    dao.insert(it)
+                val tagged = it.withIsOld(threshold)
+                if (!dao.exists(tagged.title, tagged.diff, tagged.type, tagged.achievement, tagged.dxScore)) {
+                    dao.insert(tagged)
                 } else {
                     return@forEach
                 }
@@ -25,6 +27,9 @@ object MaimaiScoreManager {
         }
         refreshMaimaiScore()
     }
+
+    private fun MaimaiScoreEntity.withIsOld(threshold: Int): MaimaiScoreEntity =
+        this.copy(isOld = this.version < threshold)
 
     fun createMaimaiScore(score: MaimaiScoreEntity) {
         GlobalViewModel.viewModelScope.launch(Dispatchers.IO) {

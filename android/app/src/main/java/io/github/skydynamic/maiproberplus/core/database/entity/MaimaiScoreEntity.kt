@@ -19,5 +19,6 @@ data class MaimaiScoreEntity(
     val diff: MaimaiEnums.Difficulty,
     val rankType: MaimaiEnums.RankType,
     val syncType: MaimaiEnums.SyncType,
-    val fullComboType: MaimaiEnums.FullComboType
+    val fullComboType: MaimaiEnums.FullComboType,
+    @ColumnInfo("is_old") val isOld: Boolean = false
 )

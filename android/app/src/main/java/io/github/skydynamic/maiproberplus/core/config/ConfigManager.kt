@@ -78,6 +78,7 @@ data class ConfigStorage(
     var userInfo: UserInfo = UserInfo(),
     var scoreDisplayType: ScoreDisplayType = ScoreDisplayType.Small,
     var scoreStyleType: ScoreStyleType = ScoreStyleType.ColorOverlay,
+    var lxnsRomVersionThreshold: Int = 25500,
 )
 
 @Serializable

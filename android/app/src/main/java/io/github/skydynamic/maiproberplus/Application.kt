@@ -145,7 +145,7 @@ class Application : Application() {
         // --- db: guard against Room initialization failure ---
         try {
             db = Room.databaseBuilder(this, AppDatabase::class.java, "maiproberplus")
-                .addMigrations(DatabaseMigration.MIGRATION_1_2)
+                .addMigrations(DatabaseMigration.MIGRATION_1_2, DatabaseMigration.MIGRATION_2_3)
                 .build()
         } catch (e: Throwable) {
             Log.e("App", "AppDatabase initialization failed; db will be unavailable", e)
@@ -154,7 +154,7 @@ class Application : Application() {
             // instead of crashing the whole Application onCreate path.
             try {
                 db = Room.databaseBuilder(this, AppDatabase::class.java, "maiproberplus")
-                    .addMigrations(DatabaseMigration.MIGRATION_1_2)
+                    .addMigrations(DatabaseMigration.MIGRATION_1_2, DatabaseMigration.MIGRATION_2_3)
                     .fallbackToDestructiveMigration()
                     .build()
             } catch (e2: Throwable) {
