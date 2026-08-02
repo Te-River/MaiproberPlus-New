@@ -66,7 +66,7 @@ object GlobalViewModel : ViewModel() {
     var showMessageDialog by mutableStateOf(false)
     var showUpdateDialog by mutableStateOf(false)
     var showInstallApkDialog by mutableStateOf(false)
-    var proberPlatform by mutableStateOf(ProberPlatform.DIVING_FISH)
+    var proberPlatform by mutableStateOf(ProberPlatform.LXNS)
     var gameType by mutableStateOf(GameType.MaimaiDX)
     var maimaiHooking by mutableStateOf(false)
     var chuniHooking by mutableStateOf(false)

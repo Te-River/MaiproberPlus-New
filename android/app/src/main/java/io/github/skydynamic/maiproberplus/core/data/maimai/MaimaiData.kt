@@ -112,10 +112,13 @@ class MaimaiData {
             type: MaimaiEnums.SongType
         ): Float {
             val difficulties = MAIMAI_SONG_LIST.find { it.title == title }?.difficulties
+            val idx = diffculty.diffIndex
             return if (type == MaimaiEnums.SongType.DX) {
-                difficulties?.dx[diffculty.diffIndex]?.levelValue ?: 0F
+                val dx = difficulties?.dx
+                if (dx != null && idx < dx.size) dx[idx].levelValue else 0F
             } else if (type == MaimaiEnums.SongType.STANDARD) {
-                difficulties?.standard[diffculty.diffIndex]?.levelValue ?: 0F
+                val std = difficulties?.standard
+                if (std != null && idx < std.size) std[idx].levelValue else 0F
             } else {
                 0F
             }
@@ -127,10 +130,13 @@ class MaimaiData {
             type: MaimaiEnums.SongType
         ): Int {
             val difficulties = MAIMAI_SONG_LIST.find { it.title == title }?.difficulties
+            val idx = diffculty.diffIndex
             return if (type == MaimaiEnums.SongType.DX) {
-                difficulties?.dx[diffculty.diffIndex]?.version ?: 0
+                val dx = difficulties?.dx
+                if (dx != null && idx < dx.size) dx[idx].version else 0
             } else if (type == MaimaiEnums.SongType.STANDARD) {
-                difficulties?.standard[diffculty.diffIndex]?.version ?: 0
+                val std = difficulties?.standard
+                if (std != null && idx < std.size) std[idx].version else 0
             } else {
                 0
             }
@@ -142,10 +148,13 @@ class MaimaiData {
             type: MaimaiEnums.SongType
         ): Int {
             val difficulties = MAIMAI_SONG_LIST.find { it.title == title }?.difficulties
+            val idx = diffculty.diffIndex
             return if (type == MaimaiEnums.SongType.DX) {
-                difficulties?.dx[diffculty.diffIndex]?.notes?.total ?: 0
+                val dx = difficulties?.dx
+                if (dx != null && idx < dx.size) dx[idx].notes?.total ?: 0 else 0
             } else if (type == MaimaiEnums.SongType.STANDARD) {
-                difficulties?.standard[diffculty.diffIndex]?.notes?.total ?: 0
+                val std = difficulties?.standard
+                if (std != null && idx < std.size) std[idx].notes?.total ?: 0 else 0
             } else {
                 0
             }
