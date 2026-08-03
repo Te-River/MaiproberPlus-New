@@ -235,8 +235,10 @@ object RivalSyncUtil {
                 }
             }
             nextIndex = page.nextIndex
+            // 每页进度反馈，避免用户看着进度条"一直在转"以为卡死
+            sendMessageToUi("拉取成绩中，已拉 ${all.size} 条${if (nextIndex != 0) "，继续拉下一页" else ""}")
         } while (nextIndex != 0)
-        sendMessageToUi("拉取对手成绩完成，共 ${all.size} 条")
+        sendMessageToUi("拉取成绩完成，共 ${all.size} 条")
         return all
     }
 
