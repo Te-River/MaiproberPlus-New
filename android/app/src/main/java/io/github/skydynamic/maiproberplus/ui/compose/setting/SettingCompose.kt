@@ -572,6 +572,147 @@ fun SettingCompose() {
                         thickness = 1.dp
                     )
 
+                    Text(
+                        "类型一（Rival 同步）配置",
+                        fontSize = 14.sp,
+                        modifier = Modifier.padding(15.dp, top = 5.dp, bottom = 0.dp)
+                    )
+                    Text(
+                        "以下参数参考 Mizuki-plugin-Maimai-sync，全部留空由你自填，不内置。\n" +
+                            "机台号/地区号/游戏名称/鉴权网址/游戏服务器网址/加密参数等，" +
+                            "填错会导致 Rival 同步失败。",
+                        fontSize = 11.sp,
+                        color = Color.Gray,
+                        modifier = Modifier.padding(15.dp, top = 0.dp, bottom = 5.dp)
+                    )
+
+                    val rival = config.rivalSyncConfig
+                    OutlinedTextField(
+                        value = rival.keychip,
+                        onValueChange = { rival.keychip = it; application.configManager.save() },
+                        singleLine = true,
+                        label = { Text("机台号 (keychip)", fontSize = 12.sp) },
+                        modifier = Modifier.padding(15.dp).fillMaxWidth()
+                    )
+                    OutlinedTextField(
+                        value = rival.storeName,
+                        onValueChange = { rival.storeName = it; application.configManager.save() },
+                        singleLine = true,
+                        label = { Text("门店名 (Store name)", fontSize = 12.sp) },
+                        modifier = Modifier.padding(15.dp).fillMaxWidth()
+                    )
+                    OutlinedTextField(
+                        value = rival.province,
+                        onValueChange = { rival.province = it; application.configManager.save() },
+                        singleLine = true,
+                        label = { Text("省份名 (Province)", fontSize = 12.sp) },
+                        modifier = Modifier.padding(15.dp).fillMaxWidth()
+                    )
+                    OutlinedTextField(
+                        value = rival.storeId,
+                        onValueChange = { rival.storeId = it; application.configManager.save() },
+                        singleLine = true,
+                        label = { Text("门店 ID (Store ID)", fontSize = 12.sp) },
+                        modifier = Modifier.padding(15.dp).fillMaxWidth()
+                    )
+                    OutlinedTextField(
+                        value = rival.provinceId,
+                        onValueChange = { rival.provinceId = it; application.configManager.save() },
+                        singleLine = true,
+                        label = { Text("地区号 (Province ID)", fontSize = 12.sp) },
+                        modifier = Modifier.padding(15.dp).fillMaxWidth()
+                    )
+                    OutlinedTextField(
+                        value = rival.gameName,
+                        onValueChange = { rival.gameName = it; application.configManager.save() },
+                        singleLine = true,
+                        label = { Text("游戏名称 (gameName, 如 maimai)", fontSize = 12.sp) },
+                        modifier = Modifier.padding(15.dp).fillMaxWidth()
+                    )
+                    OutlinedTextField(
+                        value = rival.gameServerUrl,
+                        onValueChange = { rival.gameServerUrl = it; application.configManager.save() },
+                        singleLine = true,
+                        label = { Text("游戏服务器网址 (GAME_BASE_URL)", fontSize = 12.sp) },
+                        modifier = Modifier.padding(15.dp).fillMaxWidth()
+                    )
+                    OutlinedTextField(
+                        value = rival.authServerUrl,
+                        onValueChange = { rival.authServerUrl = it; application.configManager.save() },
+                        singleLine = true,
+                        label = { Text("鉴权网址 (AIME_DB_URL)", fontSize = 12.sp) },
+                        modifier = Modifier.padding(15.dp).fillMaxWidth()
+                    )
+                    OutlinedTextField(
+                        value = rival.cryptVersion,
+                        onValueChange = { rival.cryptVersion = it; application.configManager.save() },
+                        singleLine = true,
+                        label = { Text("加密版本 (如 2026-1.55)", fontSize = 12.sp) },
+                        modifier = Modifier.padding(15.dp).fillMaxWidth()
+                    )
+                    OutlinedTextField(
+                        value = rival.cryptKey,
+                        onValueChange = { rival.cryptKey = it; application.configManager.save() },
+                        singleLine = true,
+                        label = { Text("加密 Key (cryptKey)", fontSize = 12.sp) },
+                        modifier = Modifier.padding(15.dp).fillMaxWidth()
+                    )
+                    OutlinedTextField(
+                        value = rival.cryptIv,
+                        onValueChange = { rival.cryptIv = it; application.configManager.save() },
+                        singleLine = true,
+                        label = { Text("加密 IV (cryptIv)", fontSize = 12.sp) },
+                        modifier = Modifier.padding(15.dp).fillMaxWidth()
+                    )
+                    OutlinedTextField(
+                        value = rival.cryptEncoding,
+                        onValueChange = { rival.cryptEncoding = it; application.configManager.save() },
+                        singleLine = true,
+                        label = { Text("编码版本 (cryptEncoding, 如 1.55)", fontSize = 12.sp) },
+                        modifier = Modifier.padding(15.dp).fillMaxWidth()
+                    )
+                    OutlinedTextField(
+                        value = rival.cryptObfuscate,
+                        onValueChange = { rival.cryptObfuscate = it; application.configManager.save() },
+                        singleLine = true,
+                        label = { Text("混淆参数 (cryptObfuscate, 如 <crypt-obfuscate>)", fontSize = 12.sp) },
+                        modifier = Modifier.padding(15.dp).fillMaxWidth()
+                    )
+                    OutlinedTextField(
+                        value = rival.authSalt,
+                        onValueChange = { rival.authSalt = it; application.configManager.save() },
+                        singleLine = true,
+                        label = { Text("Auth Salt", fontSize = 12.sp) },
+                        modifier = Modifier.padding(15.dp).fillMaxWidth()
+                    )
+                    OutlinedTextField(
+                        value = rival.aesKey,
+                        onValueChange = { rival.aesKey = it; application.configManager.save() },
+                        singleLine = true,
+                        label = { Text("AES Key", fontSize = 12.sp) },
+                        modifier = Modifier.padding(15.dp).fillMaxWidth()
+                    )
+                    OutlinedTextField(
+                        value = rival.aesIv,
+                        onValueChange = { rival.aesIv = it; application.configManager.save() },
+                        singleLine = true,
+                        label = { Text("AES IV", fontSize = 12.sp) },
+                        modifier = Modifier.padding(15.dp).fillMaxWidth()
+                    )
+                    OutlinedTextField(
+                        value = rival.obfuscateParam,
+                        onValueChange = { rival.obfuscateParam = it; application.configManager.save() },
+                        singleLine = true,
+                        label = { Text("Obfuscate Param", fontSize = 12.sp) },
+                        modifier = Modifier.padding(15.dp).fillMaxWidth()
+                    )
+
+                    HorizontalDivider(
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                        color = Color.LightGray,
+                        thickness = 1.dp
+                    )
+
                     TextButtonItem(
                         modifier = Modifier
                             .padding(start = 15.dp, top = 5.dp, end = 15.dp, bottom = 5.dp)

@@ -56,6 +56,7 @@ import io.github.skydynamic.maiproberplus.core.data.chuni.ChuniScoreManager.writ
 import io.github.skydynamic.maiproberplus.core.data.maimai.MaimaiScoreManager.writeMaimaiScoreCache
 import io.github.skydynamic.maiproberplus.core.prober.ProberPlatform
 import io.github.skydynamic.maiproberplus.core.prober.lxns.LxnsOAuthUtil
+import io.github.skydynamic.maiproberplus.core.prober.rival.RivalSyncUtil
 import io.github.skydynamic.maiproberplus.core.prober.sendMessageToUi
 import io.github.skydynamic.maiproberplus.core.proxy.HttpServer
 import io.github.skydynamic.maiproberplus.ui.component.ConfirmDialog
@@ -487,7 +488,24 @@ fun SyncCompose() {
                     .padding(15.dp)
                     .size(300.dp, 50.dp),
                 onClick = {
-                    // 通过 Rivral 同步（占位，后续接入功能）
+                    // 通过 Rivral 同步：先 QR 鉴权（本地无 userId 时弹输入框），再拉对手成绩写本地缓存。
+                    // 类型一仅对舞萌 DX 生效，中二节奏无 Rival API。
+                    if (globalViewModel.gameType != GameType.MaimaiDX) {
+                        sendMessageToUi("通过 Rivral 同步仅支持舞萌 DX")
+                        return@Button
+                    }
+                    val cfg = application.configManager.config.rivalSyncConfig
+                    if (cfg.userId.isBlank() || cfg.token.isBlank()) {
+                        sendMessageToUi("请先在设置页完成类型一 QR 鉴权，或填入 userId")
+                        return@Button
+                    }
+                    GlobalViewModel.viewModelScope.launch(Dispatchers.IO) {
+                        val scores = RivalSyncUtil.fetchRivalScores()
+                        if (scores.isNotEmpty()) {
+                            writeMaimaiScoreCache(scores)
+                            sendMessageToUi("通过 Rivral 同步完成，共 ${scores.size} 条")
+                        }
+                    }
                 }
             ) {
                 Text("通过 Rivral 同步")
