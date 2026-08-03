@@ -4,6 +4,8 @@ import android.icu.text.DecimalFormat
 import android.util.Log
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.foundation.background
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Box
@@ -189,8 +191,8 @@ fun MaimaiScoreDetailDialog(
                             }
                             androidx.compose.animation.AnimatedVisibility(
                                 visible = scoreTitleScrollState.canScrollBackward,
-                                enter = fadeIn(),
-                                exit = fadeOut(),
+                                enter = slideInHorizontally { -it } + fadeIn(),
+                                exit = slideOutHorizontally { -it } + fadeOut(),
                                 modifier = Modifier
                                     .align(Alignment.CenterStart)
                             ) {
@@ -210,8 +212,8 @@ fun MaimaiScoreDetailDialog(
                             }
                             androidx.compose.animation.AnimatedVisibility(
                                 visible = scoreTitleScrollState.canScrollForward,
-                                enter = fadeIn(),
-                                exit = fadeOut(),
+                                enter = slideInHorizontally { it } + fadeIn(),
+                                exit = slideOutHorizontally { it } + fadeOut(),
                                 modifier = Modifier
                                     .align(Alignment.CenterEnd)
                             ) {

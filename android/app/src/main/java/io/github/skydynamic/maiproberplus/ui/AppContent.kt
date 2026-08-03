@@ -158,7 +158,7 @@ fun AppContent() {
 
                     Crossfade(
                         targetState = GlobalViewModel.currentTab,
-                        animationSpec = tween(durationMillis = 500),
+                        animationSpec = tween(durationMillis = 300),
                         label = "pageCross",
                         modifier = Modifier
                             .weight(1f)
@@ -177,7 +177,7 @@ fun AppContent() {
                 ) {
                     Crossfade(
                         targetState = GlobalViewModel.currentTab,
-                        animationSpec = tween(durationMillis = 500),
+                        animationSpec = tween(durationMillis = 300),
                         label = "pageCross",
                         modifier = Modifier
                             .weight(1f)
