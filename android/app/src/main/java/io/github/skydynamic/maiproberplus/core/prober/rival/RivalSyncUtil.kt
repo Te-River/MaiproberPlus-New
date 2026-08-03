@@ -92,7 +92,7 @@ object RivalSyncUtil {
             sendMessageToUi("Rival 同步不支持本地查分器，请选落雪或水鱼")
             return
         }
-        sendMessageToUi("开始拉对手成绩并上传到${platform.proberName}")
+        sendMessageToUi("开始拉取成绩并上传到${platform.proberName}")
         val scores = fetchRivalScores()
         if (scores.isEmpty()) {
             sendMessageToUi("通过 Rival 同步失败：未拉到对手成绩，请检查 Rival 设置")
