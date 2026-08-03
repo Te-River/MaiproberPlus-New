@@ -89,15 +89,20 @@ object RivalSyncUtil {
      * @param onProgress 实时进度回调（就地显文本而非弹 InfoDialog 弹窗遮盖进度条）
      */
     suspend fun uploadToProber(onProgress: (String) -> Unit = ::sendMessageToUi) {
+        // 包装 onProgress：每条提示同时写 sync.log，便于后续翻 log 复盘
+        val report: (String) -> Unit = { msg ->
+            ErrorLog.logSync("Rival", msg)
+            onProgress(msg)
+        }
         val platform = GlobalViewModel.proberPlatform
         if (platform == ProberPlatform.LOCAL) {
-            onProgress("Rival 同步不支持本地查分器，请选落雪或水鱼")
+            report("Rival 同步不支持本地查分器，请选落雪或水鱼")
             return
         }
-        onProgress("开始拉取成绩并上传到${platform.proberName}")
-        val scores = fetchRivalScores(onProgress)
+        report("开始拉取成绩并上传到${platform.proberName}")
+        val scores = fetchRivalScores(report)
         if (scores.isEmpty()) {
-            onProgress("通过 Rival 同步失败：未拉到成绩，请检查 Rival 设置")
+            report("通过 Rival 同步失败：未拉到成绩，请检查 Rival 设置")
             return
         }
         val config = application.configManager.config
@@ -113,13 +118,14 @@ object RivalSyncUtil {
             authUrl = "",
             externalScores = scores
         )
-        onProgress(if (ok) "成绩同步成功" else "成绩同步失败")
+        report(if (ok) "成绩同步成功" else "成绩同步失败")
     }
 
     /** QR 鉴权：POST authServerUrl，拿 userId/token 存本地。返回是否成功。 */
     suspend fun authByQr(qrCode: String): Boolean {
         val cfg = application.configManager.config.rivalSyncConfig
         if (qrCode.isBlank()) {
+            ErrorLog.logSync("Rival", "二维码不能为空", "W")
             sendMessageToUi("二维码不能为空")
             return false
         }
@@ -128,6 +134,7 @@ object RivalSyncUtil {
         val timeStamp = SimpleDateFormat("yyMMddHHmmss", Locale.CHINA)
             .format(Date())
         if (cfg.keychip.isBlank() || cfg.authSalt.isBlank() || cfg.authServerUrl.isBlank()) {
+            ErrorLog.logSync("Rival", "类型一配置缺失：keychip/authSalt/authServerUrl", "W")
             sendMessageToUi("类型一配置缺失：keychip/authSalt/authServerUrl")
             return false
         }
@@ -149,10 +156,12 @@ object RivalSyncUtil {
             val respText = resp.bodyAsText()
             if (resp.status.value != 200) {
                 ErrorLog.logError(TAG, "鉴权 HTTP ${resp.status}: $respText")
+                ErrorLog.logSync("Rival", "鉴权 HTTP ${resp.status}: $respText", "E")
                 sendMessageToUi("鉴权 HTTP 错误: ${resp.status}")
                 return false
             }
             val data = try { json.decodeFromString<AuthResponse>(respText) } catch (_: Exception) {
+                ErrorLog.logSync("Rival", "鉴权响应解析失败: $respText", "E")
                 sendMessageToUi("鉴权响应解析失败: $respText")
                 return false
             }
@@ -163,15 +172,18 @@ object RivalSyncUtil {
                     else -> "鉴权拒绝: ${data.errorID}"
                 }
                 sendMessageToUi(msg)
+                ErrorLog.logSync("Rival", "鉴权拒绝: $msg", "W")
                 return false
             }
             cfg.userId = data.userID.toString()
             cfg.token = data.token ?: ""
             application.configManager.save()
+            ErrorLog.logSync("Rival", "鉴权成功，userId=${data.userID}")
             sendMessageToUi("鉴权成功，userId=${data.userID}")
             true
         } catch (e: Exception) {
             ErrorLog.logError(TAG, "鉴权异常: ${e.message}", e)
+            ErrorLog.logSync("Rival", "鉴权异常: ${e.message}", "E", e)
             sendMessageToUi("鉴权异常: ${e.message}")
             false
         }
@@ -181,10 +193,12 @@ object RivalSyncUtil {
     suspend fun fetchRivalScores(onProgress: (String) -> Unit = ::sendMessageToUi): List<MaimaiScoreEntity> {
         val cfg = application.configManager.config.rivalSyncConfig
         val userId = cfg.userId.toIntOrNull() ?: run {
+            ErrorLog.logSync("Rival", "未保存 userId，请先 QR 鉴权", "W")
             sendMessageToUi("未保存 userId，请先 QR 鉴权")
             return emptyList()
         }
         if (cfg.gameServerUrl.isBlank() || cfg.apiHash.isBlank() || cfg.cryptKey.isBlank() || cfg.cryptIv.isBlank()) {
+            ErrorLog.logSync("Rival", "Rival 设置缺失必填项：游戏服务器网址/哈希/加密 Key/加密 IV", "W")
             sendMessageToUi("Rival 设置缺失必填项：游戏服务器网址/哈希/加密 Key/加密 IV")
             return emptyList()
         }
@@ -215,19 +229,23 @@ object RivalSyncUtil {
                 }
             } catch (e: Exception) {
                 ErrorLog.logError(TAG, "拉取对手成绩异常: ${e.message}", e)
+                ErrorLog.logSync("Rival", "拉取对手成绩异常: ${e.message}", "E", e)
                 sendMessageToUi("拉取对手成绩异常: ${e.message}")
                 return emptyList()
             }
             if (resp.status.value != 200) {
+                ErrorLog.logSync("Rival", "拉取对手成绩 HTTP ${resp.status}", "E")
                 sendMessageToUi("拉取对手成绩 HTTP ${resp.status}")
                 return emptyList()
             }
             val decrypted = try { decrypt(resp.bodyAsBytes(), cfg) } catch (e: Exception) {
                 ErrorLog.logError(TAG, "解密响应失败: ${e.message}", e)
+                ErrorLog.logSync("Rival", "解密响应失败: ${e.message}", "E", e)
                 sendMessageToUi("解密响应失败: ${e.message}")
                 return emptyList()
             }
             val page = try { json.decodeFromString<RivalMusicResponse>(decrypted) } catch (_: Exception) {
+                ErrorLog.logSync("Rival", "响应解析失败: $decrypted", "E")
                 sendMessageToUi("响应解析失败: $decrypted")
                 return emptyList()
             }

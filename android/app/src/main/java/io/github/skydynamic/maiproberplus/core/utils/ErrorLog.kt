@@ -22,6 +22,7 @@ import java.util.Locale
 object ErrorLog {
     private const val TAG = "ErrorLog"
     private const val FILE_NAME = "error.log"
+    private const val SYNC_FILE_NAME = "sync.log"
     private const val MAX_FILE_BYTES = 2 * 1024 * 1024L  // 2MB
 
     private val dateFormat = SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS", Locale.CHINA)
@@ -35,35 +36,62 @@ object ErrorLog {
     fun logError(tag: String, message: String, throwable: Throwable? = null) {
         try {
             Log.e(tag, message, throwable)
-            val entry = buildString {
-                append("[")
-                append(dateFormat.format(Date()))
-                append("] [")
-                append(Thread.currentThread().name)
-                append("] [")
-                append(tag)
-                append("] ")
-                append(message)
-                if (throwable != null) {
-                    append("\n")
-                    val sw = StringWriter()
-                    throwable.printStackTrace(PrintWriter(sw))
-                    // stack trace 缩进两格便于阅读
-                    sw.toString().lineSequence().forEach { line ->
-                        append("  ").append(line).append("\n")
-                    }
-                } else {
-                    append("\n")
-                }
-            }
-            writeEntry(entry)
+            val entry = buildEntry(tag, message, throwable)
+            writeEntry(entry, logFile())
         } catch (_: Throwable) {
             // 记录本身报错不再向上抛，避免把 app 搞崩
         }
     }
 
-    private fun writeEntry(entry: String) {
-        val file = logFile()
+    /**
+     * 记一条同步 log 到本地 sync.log + logcat（Info 级）。
+     * Rival 同步期间所有提示/进度/报错都经此写到独立 sync.log，
+     * 便于用户直接翻这一个文件复盘同步流程。
+     * @param tag 来源 TAG（如 "Rival"/"Lxns"/"DivingFish"）
+     * @param message 可读描述
+     * @param level 日志级（"I"/"W"/"E"，默认 "I"）
+     * @param throwable 异常（可选，会写完整 stack trace）
+     */
+    fun logSync(tag: String, message: String, level: String = "I", throwable: Throwable? = null) {
+        try {
+            when (level) {
+                "W" -> Log.w(tag, message, throwable)
+                "E" -> Log.e(tag, message, throwable)
+                else -> Log.i(tag, message, throwable)
+            }
+            val entry = buildEntry(tag, message, throwable, level)
+            writeEntry(entry, syncLogFile())
+        } catch (_: Throwable) {
+            // 记录本身报错不再向上抛
+        }
+    }
+
+    private fun buildEntry(tag: String, message: String, throwable: Throwable?, level: String = "E"): String =
+        buildString {
+            append("[")
+            append(dateFormat.format(Date()))
+            append("] [")
+            append(level)
+            append("] [")
+            append(Thread.currentThread().name)
+            append("] [")
+            append(tag)
+            append("] ")
+            append(message)
+            if (throwable != null) {
+                append("\n")
+                val sw = StringWriter()
+                throwable.printStackTrace(PrintWriter(sw))
+                // stack trace 缩进两格便于阅读
+                sw.toString().lineSequence().forEach { line ->
+                    append("  ").append(line).append("\n")
+                }
+            } else {
+                append("\n")
+            }
+        }
+
+    private fun writeEntry(entry: String, file: File) {
         synchronized(this) {
             try {
                 // 超限回滚：保留尾部一半重写，避免无限膨胀
@@ -102,6 +130,12 @@ object ErrorLog {
     private fun logFile(): File =
         File(Application.application.filesDir, FILE_NAME)
 
+    private fun syncLogFile(): File =
+        File(Application.application.filesDir, SYNC_FILE_NAME)
+
     /** 给设置页/调试入口用的：返回 log 文件绝对路径，方便用户分享。 */
     fun logFilePath(): String = logFile().absolutePath
+
+    /** 返回同步 log 文件绝对路径（filesDir/sync.log），方便用户翻同步流程复盘。 */
+    fun syncLogFilePath(): String = syncLogFile().absolutePath
 }
