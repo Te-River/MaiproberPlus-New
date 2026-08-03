@@ -86,17 +86,18 @@ object RivalSyncUtil {
      * 类型一完整流程：拉对手成绩 → 上传到当前选定查分器（落雪 OAuth / 水鱼 Token / 本地）。
      * 对齐 Mizuki lib_sync_core._upload_to_platforms：拉 Rival 成绩后转查分器格式上传。
      * 上传走现成 IProberUtil.uploadMaimaiProberData，externalScores 传 Rival 拉的成绩跳过 VPN 抓包。
+     * @param onProgress 实时进度回调（就地显文本而非弹 InfoDialog 弹窗遮盖进度条）
      */
-    suspend fun uploadToProber() {
+    suspend fun uploadToProber(onProgress: (String) -> Unit = ::sendMessageToUi) {
         val platform = GlobalViewModel.proberPlatform
         if (platform == ProberPlatform.LOCAL) {
-            sendMessageToUi("Rival 同步不支持本地查分器，请选落雪或水鱼")
+            onProgress("Rival 同步不支持本地查分器，请选落雪或水鱼")
             return
         }
-        sendMessageToUi("开始拉取成绩并上传到${platform.proberName}")
-        val scores = fetchRivalScores()
+        onProgress("开始拉取成绩并上传到${platform.proberName}")
+        val scores = fetchRivalScores(onProgress)
         if (scores.isEmpty()) {
-            sendMessageToUi("通过 Rival 同步失败：未拉到成绩，请检查 Rival 设置")
+            onProgress("通过 Rival 同步失败：未拉到成绩，请检查 Rival 设置")
             return
         }
         val config = application.configManager.config
@@ -112,7 +113,7 @@ object RivalSyncUtil {
             authUrl = "",
             externalScores = scores
         )
-        sendMessageToUi(if (ok) "成绩同步成功" else "成绩同步失败")
+        onProgress(if (ok) "成绩同步成功" else "成绩同步失败")
     }
 
     /** QR 鉴权：POST authServerUrl，拿 userId/token 存本地。返回是否成功。 */
@@ -177,7 +178,7 @@ object RivalSyncUtil {
     }
 
     /** 调 GetUserRivalMusicApi 拉对手成绩，转本地 MaimaiScoreEntity 格式返回。 */
-    suspend fun fetchRivalScores(): List<MaimaiScoreEntity> {
+    suspend fun fetchRivalScores(onProgress: (String) -> Unit = ::sendMessageToUi): List<MaimaiScoreEntity> {
         val cfg = application.configManager.config.rivalSyncConfig
         val userId = cfg.userId.toIntOrNull() ?: run {
             sendMessageToUi("未保存 userId，请先 QR 鉴权")
@@ -237,9 +238,9 @@ object RivalSyncUtil {
             }
             nextIndex = page.nextIndex
             // 每页进度反馈，避免用户看着进度条"一直在转"以为卡死
-            sendMessageToUi("拉取成绩中，已拉 ${all.size} 条${if (nextIndex != 0) "，继续拉下一页" else ""}")
+            onProgress("拉取成绩中，已拉 ${all.size} 条${if (nextIndex != 0) "，继续拉下一页" else ""}")
         } while (nextIndex != 0)
-        sendMessageToUi("拉取成绩完成，共 ${all.size} 条")
+        onProgress("拉取成绩完成，共 ${all.size} 条")
         return all
     }
 
