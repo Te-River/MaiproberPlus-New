@@ -23,6 +23,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.RadioButton
@@ -43,6 +44,7 @@ import androidx.core.text.isDigitsOnly
 import androidx.lifecycle.viewModelScope
 import io.github.skydynamic.maiproberplus.Application.Companion.application
 import io.github.skydynamic.maiproberplus.BuildConfig
+import io.github.skydynamic.maiproberplus.core.prober.rival.RivalSyncUtil
 import io.github.skydynamic.maiproberplus.GlobalViewModel
 import io.github.skydynamic.maiproberplus.core.config.ScoreDisplayType
 import io.github.skydynamic.maiproberplus.core.config.ScoreStyleType
@@ -90,6 +92,8 @@ fun SettingCompose() {
     var showChooseMaimaiDiffDialog by remember { mutableStateOf(false) }
     var showChooseChuniDiffDialog by remember { mutableStateOf(false) }
     var showSelectShougouColorDialog by remember { mutableStateOf(false) }
+
+    var showRivalSetting by remember { mutableStateOf(false) }
 
     var showConfirmUpdateSongResourceDialog by remember { mutableStateOf(false) }
     var showUpdateSongResourceDialog by remember { mutableStateOf(false) }
@@ -158,6 +162,9 @@ fun SettingCompose() {
     }
 
     Box(Modifier.fillMaxSize()) {
+        if (showRivalSetting) {
+            RivalSettingCompose(onBack = { showRivalSetting = false })
+        } else {
         LazyVerticalStaggeredGrid(
             columns = StaggeredGridCells.Fixed(if (application.isLandscape) 2 else 1),
             modifier = Modifier.fillMaxSize()
@@ -218,130 +225,18 @@ fun SettingCompose() {
                     modifier = Modifier
                         .padding(groupPadding)
                         .wrapContentSize(),
-                    title = "Rival 设置"
-                ) {
-                    val rival = config.rivalSyncConfig
-                    OutlinedTextField(
-                        value = rival.keychip,
-                        onValueChange = { rival.keychip = it; application.configManager.save() },
-                        singleLine = true,
-                        label = { Text("机台号 (keychip)", fontSize = 12.sp) },
-                        modifier = Modifier.padding(15.dp).fillMaxWidth()
-                    )
-                    OutlinedTextField(
-                        value = rival.storeId,
-                        onValueChange = { rival.storeId = it; application.configManager.save() },
-                        singleLine = true,
-                        label = { Text("门店 ID (Store ID)", fontSize = 12.sp) },
-                        modifier = Modifier.padding(15.dp).fillMaxWidth()
-                    )
-                    OutlinedTextField(
-                        value = rival.provinceId,
-                        onValueChange = { rival.provinceId = it; application.configManager.save() },
-                        singleLine = true,
-                        label = { Text("地区号 (Province ID)", fontSize = 12.sp) },
-                        modifier = Modifier.padding(15.dp).fillMaxWidth()
-                    )
-                    OutlinedTextField(
-                        value = rival.gameName,
-                        onValueChange = { rival.gameName = it; application.configManager.save() },
-                        singleLine = true,
-                        label = { Text("游戏名称 (如 maimai)", fontSize = 12.sp) },
-                        modifier = Modifier.padding(15.dp).fillMaxWidth()
-                    )
-                    OutlinedTextField(
-                        value = rival.gameServerUrl,
-                        onValueChange = { rival.gameServerUrl = it; application.configManager.save() },
-                        singleLine = true,
-                        label = { Text("RivalApi 调用端口 (直接拿来用不拼接)", fontSize = 12.sp) },
-                        modifier = Modifier.padding(15.dp).fillMaxWidth()
-                    )
-                    OutlinedTextField(
-                        value = rival.authServerUrl,
-                        onValueChange = { rival.authServerUrl = it; application.configManager.save() },
-                        singleLine = true,
-                        label = { Text("Auth 鉴权节点 (仅 QR 鉴权时必填，直拿来用)", fontSize = 12.sp) },
-                        modifier = Modifier.padding(15.dp).fillMaxWidth()
-                    )
-                    OutlinedTextField(
-                        value = rival.userId,
-                        onValueChange = { rival.userId = it; application.configManager.save() },
-                        singleLine = true,
-                        label = { Text("userId (QR 鉴权后自动填，也可直接填跳过 QR)", fontSize = 12.sp) },
-                        modifier = Modifier.padding(15.dp).fillMaxWidth()
-                    )
-                    OutlinedTextField(
-                        value = rival.cryptVersion,
-                        onValueChange = { rival.cryptVersion = it; application.configManager.save() },
-                        singleLine = true,
-                        label = { Text("加密版本 (如 2026-1.55)", fontSize = 12.sp) },
-                        modifier = Modifier.padding(15.dp).fillMaxWidth()
-                    )
-                    OutlinedTextField(
-                        value = rival.cryptKey,
-                        onValueChange = { rival.cryptKey = it; application.configManager.save() },
-                        singleLine = true,
-                        label = { Text("加密 Key", fontSize = 12.sp) },
-                        modifier = Modifier.padding(15.dp).fillMaxWidth()
-                    )
-                    OutlinedTextField(
-                        value = rival.cryptIv,
-                        onValueChange = { rival.cryptIv = it; application.configManager.save() },
-                        singleLine = true,
-                        label = { Text("加密 IV", fontSize = 12.sp) },
-                        modifier = Modifier.padding(15.dp).fillMaxWidth()
-                    )
-                    OutlinedTextField(
-                        value = rival.cryptEncoding,
-                        onValueChange = { rival.cryptEncoding = it; application.configManager.save() },
-                        singleLine = true,
-                        label = { Text("编码版本 (如 1.55)", fontSize = 12.sp) },
-                        modifier = Modifier.padding(15.dp).fillMaxWidth()
-                    )
-                    OutlinedTextField(
-                        value = rival.cryptObfuscate,
-                        onValueChange = { rival.cryptObfuscate = it; application.configManager.save() },
-                        singleLine = true,
-                        label = { Text("混淆参数 (如 <crypt-obfuscate>)", fontSize = 12.sp) },
-                        modifier = Modifier.padding(15.dp).fillMaxWidth()
-                    )
-                    OutlinedTextField(
-                        value = rival.authSalt,
-                        onValueChange = { rival.authSalt = it; application.configManager.save() },
-                        singleLine = true,
-                        label = { Text("Auth Salt", fontSize = 12.sp) },
-                        modifier = Modifier.padding(15.dp).fillMaxWidth()
-                    )
-                    OutlinedTextField(
-                        value = rival.aesKey,
-                        onValueChange = { rival.aesKey = it; application.configManager.save() },
-                        singleLine = true,
-                        label = { Text("AES Key", fontSize = 12.sp) },
-                        modifier = Modifier.padding(15.dp).fillMaxWidth()
-                    )
-                    OutlinedTextField(
-                        value = rival.aesIv,
-                        onValueChange = { rival.aesIv = it; application.configManager.save() },
-                        singleLine = true,
-                        label = { Text("AES IV", fontSize = 12.sp) },
-                        modifier = Modifier.padding(15.dp).fillMaxWidth()
-                    )
-                    OutlinedTextField(
-                        value = rival.obfuscateParam,
-                        onValueChange = { rival.obfuscateParam = it; application.configManager.save() },
-                        singleLine = true,
-                        label = { Text("Obfuscate Param", fontSize = 12.sp) },
-                        modifier = Modifier.padding(15.dp).fillMaxWidth()
-                    )
-                }
-            }
-            item {
-                SettingItemGroup(
-                    modifier = Modifier
-                        .padding(groupPadding)
-                        .wrapContentSize(),
                     title = "成绩抓取设置"
                 ) {
+                    TextButtonItem(
+                        modifier = Modifier
+                            .padding(start = 15.dp, top = 5.dp, end = 15.dp, bottom = 5.dp)
+                            .fillMaxWidth()
+                            .wrapContentHeight(),
+                        title = "Rival 设置",
+                        description = "类型一（Rival 同步）的鉴权网址 / 服务器网址 / 加密参数等"
+                    ) {
+                        showRivalSetting = true
+                    }
                     SwitchSettingItem(
                         title = "增量抓取舞萌成绩",
                         description = "每次爬取时使用的爬取方式，增量爬取依赖最近游玩记录，适合已经完整爬取后频繁爬取，更加稳定",
@@ -856,6 +751,7 @@ fun SettingCompose() {
                     WindowInsetsSpacer.BottomPaddingSpacer()
                 }
             }
+        }
         }
 
         Box(

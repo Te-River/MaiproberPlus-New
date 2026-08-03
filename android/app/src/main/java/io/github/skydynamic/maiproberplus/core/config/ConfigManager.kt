@@ -94,8 +94,6 @@ data class ConfigStorage(
  *
  * 字段说明（参考 Mizuki-plugin-Maimai-sync/plugins/maimai_sync）：
  *  - keychip：机台号（Mizuki keychip.csv 的 Keychip 列，作为 User-Agent 标识）
- *  - storeId：门店 ID
- *  - provinceId：地区号
  *  - gameName：游戏名称（如 "maimai"）
  *  - gameServerUrl：RivalApi 调用端口，**直接拿来用不拼接**（如 "https://<game-server-url>"）
  *  - authServerUrl：Auth 服务器的鉴权节点，**直接拿来用不拼接**（如 "http://ai.sys-allnet.cn/wc_aime/api/get_data"）。
@@ -108,8 +106,6 @@ data class ConfigStorage(
 @Serializable
 data class RivalSyncConfig(
     var keychip: String = "",
-    var storeId: String = "",
-    var provinceId: String = "",
     var gameName: String = "",
     var gameServerUrl: String = "",
     var authServerUrl: String = "",
