@@ -30,6 +30,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalConfiguration
@@ -53,6 +54,7 @@ import io.github.skydynamic.maiproberplus.core.database.DatabaseMigration
 import io.github.skydynamic.maiproberplus.core.prober.ProberPlatform
 import io.github.skydynamic.maiproberplus.core.proxy.HttpServerService
 import io.github.skydynamic.maiproberplus.core.utils.Release
+import io.github.skydynamic.maiproberplus.core.utils.ErrorLog
 import io.github.skydynamic.maiproberplus.receiver.InstallApkReceiver
 import io.github.skydynamic.maiproberplus.vpn.core.LocalVpnService
 import java.io.File
@@ -78,6 +80,11 @@ object GlobalViewModel : ViewModel() {
 
     private val _localMessage = MutableLiveData<String>()
     val localMessage: LiveData<String> get() = _localMessage
+
+    // 未读提示队列：sendMessageToUi 连续发多条时，observer 逐条 append 到这里，
+    // AppContent 显 InfoDialog 时读累计拼，用户确认后清空——避免弹窗单次显示吞后续提示。
+    val pendingMessages = mutableStateListOf<String>()
+
     fun sendAndShowMessage(message: String) {
         // postValue 保证主线程异步触发 observer，避免 value 同值不重发或
         // 在非主线程调用时 observer 触发时机被吞导致弹窗不显
@@ -111,6 +118,8 @@ class Application : Application() {
 
     override fun onCreate() {
         super.onCreate()
+        // 全局崩溃捕获：未捕获异常写本地 error.log 后交回系统 handler
+        ErrorLog.installGlobalCrashHandler()
         createNotificationChannel()
         application = this
 

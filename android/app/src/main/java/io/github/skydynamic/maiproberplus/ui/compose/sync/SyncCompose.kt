@@ -517,8 +517,8 @@ fun SyncCompose() {
                 if (rivalSyncing) {
                     LinearProgressIndicator(
                         modifier = Modifier
-                            .size(180.dp, 4.dp)
-                            .padding(horizontal = 60.dp)
+                            .fillMaxWidth(0.9f)
+                            .height(6.dp)
                     )
                 } else {
                     Text("通过 Rivral 同步")

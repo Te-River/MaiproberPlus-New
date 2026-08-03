@@ -23,6 +23,8 @@ class MainActivity : ComponentActivity() {
         }
 
         GlobalViewModel.localMessage.observe(this) { message ->
+            // 累计未读提示到队列，避免弹窗单次显示吞后续提示
+            GlobalViewModel.pendingMessages.add(message)
             GlobalViewModel.showMessageDialog = true
         }
 

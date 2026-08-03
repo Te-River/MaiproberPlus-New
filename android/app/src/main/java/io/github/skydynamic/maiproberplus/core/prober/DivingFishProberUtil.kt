@@ -16,6 +16,7 @@ import io.github.skydynamic.maiproberplus.core.prober.models.divingfish.DivingFi
 import io.github.skydynamic.maiproberplus.core.prober.models.divingfish.DivingFishMaimaiScoreBody
 import io.github.skydynamic.maiproberplus.core.prober.models.divingfish.DivingFishPlayerProfile
 import io.github.skydynamic.maiproberplus.core.utils.ParseScorePageUtil
+import io.github.skydynamic.maiproberplus.core.utils.ErrorLog
 import io.ktor.client.call.body
 import kotlinx.serialization.json.Json
 import io.ktor.client.request.get
@@ -94,7 +95,7 @@ class DivingFishProberUtil : IProberUtil {
                 Log.i("DivingFishProberUtil", "通过 Rival 同步已上传 ${externalScores.size} 条成绩到水鱼查分器, 接口信息: ${postResult.bodyAsText()}")
                 sendMessageToUi("通过 Rival 同步已上传 ${externalScores.size} 条成绩到水鱼查分器")
             } catch (e: Exception) {
-                Log.e("DivingFishProberUtil", "通过 Rival 同步上传水鱼失败", e)
+                ErrorLog.logError("DivingFishProberUtil", "通过 Rival 同步上传水鱼失败", e)
                 sendMessageToUi("通过 Rival 同步上传水鱼失败: ${e.message}")
             }
             if (isCache) {
@@ -162,7 +163,7 @@ class DivingFishProberUtil : IProberUtil {
                 }
                 Log.i("DivingFishProberUtil", "已上传${diff.diffName}成绩到水鱼查分器, 接口信息: ${postResult.bodyAsText()}")
             } catch (e: Exception) {
-                Log.e("DivingFishProberUtil", "上传${diff.diffName}成绩到水鱼查分器失败", e)
+                ErrorLog.logError("DivingFishProberUtil", "上传${diff.diffName}成绩到水鱼查分器失败", e)
             }
         }
         sendMessageToUi("上传舞萌DX成绩到水鱼查分器完成")
@@ -203,7 +204,7 @@ class DivingFishProberUtil : IProberUtil {
 
                 Log.i("DivingFishProberUtil", "已上传${diff.diffName}成绩到水鱼查分器")
             } catch (e: Exception) {
-                Log.e("DivingFishProberUtil", "上传${diff.diffName}成绩到水鱼查分器失败", e)
+                ErrorLog.logError("DivingFishProberUtil", "上传${diff.diffName}成绩到水鱼查分器失败", e)
             }
         }
         sendMessageToUi("上传中二节奏成绩到水鱼查分器完成")
@@ -248,7 +249,7 @@ class DivingFishProberUtil : IProberUtil {
             }
             return scores
         } catch (e: Exception) {
-            Log.e("DivingFishProberUtil", "获取舞萌DX成绩失败", e)
+            ErrorLog.logError("DivingFishProberUtil", "获取舞萌DX成绩失败", e)
             sendMessageToUi("获取舞萌DX成绩失败")
             return emptyList()
         }
@@ -284,7 +285,7 @@ class DivingFishProberUtil : IProberUtil {
             }
             return scores
         } catch (e: Exception) {
-            Log.e("DivingFishProberUtil", "获取中二节奏成绩失败", e)
+            ErrorLog.logError("DivingFishProberUtil", "获取中二节奏成绩失败", e)
             sendMessageToUi("获取中二节奏成绩失败")
             return emptyList()
         }

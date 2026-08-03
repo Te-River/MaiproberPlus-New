@@ -10,6 +10,7 @@ import io.github.skydynamic.maiproberplus.core.config.RivalSyncConfig
 import io.github.skydynamic.maiproberplus.core.prober.ProberPlatform
 import io.github.skydynamic.maiproberplus.core.prober.client
 import io.github.skydynamic.maiproberplus.core.prober.sendMessageToUi
+import io.github.skydynamic.maiproberplus.core.utils.ErrorLog
 import io.github.skydynamic.maiproberplus.ui.compose.sync.SyncViewModel
 import io.ktor.client.request.header
 import io.ktor.client.request.post
@@ -146,7 +147,7 @@ object RivalSyncUtil {
             }
             val respText = resp.bodyAsText()
             if (resp.status.value != 200) {
-                Log.e(TAG, "鉴权 HTTP ${resp.status}: $respText")
+                ErrorLog.logError(TAG, "鉴权 HTTP ${resp.status}: $respText")
                 sendMessageToUi("鉴权 HTTP 错误: ${resp.status}")
                 return false
             }
@@ -169,7 +170,7 @@ object RivalSyncUtil {
             sendMessageToUi("鉴权成功，userId=${data.userID}")
             true
         } catch (e: Exception) {
-            Log.e(TAG, "鉴权异常: ${e.message}", e)
+            ErrorLog.logError(TAG, "鉴权异常: ${e.message}", e)
             sendMessageToUi("鉴权异常: ${e.message}")
             false
         }
@@ -212,7 +213,7 @@ object RivalSyncUtil {
                     setBody(encrypt(mapToJson(data), cfg))
                 }
             } catch (e: Exception) {
-                Log.e(TAG, "拉取对手成绩异常: ${e.message}", e)
+                ErrorLog.logError(TAG, "拉取对手成绩异常: ${e.message}", e)
                 sendMessageToUi("拉取对手成绩异常: ${e.message}")
                 return emptyList()
             }
@@ -221,7 +222,7 @@ object RivalSyncUtil {
                 return emptyList()
             }
             val decrypted = try { decrypt(resp.bodyAsBytes(), cfg) } catch (e: Exception) {
-                Log.e(TAG, "解密响应失败: ${e.message}", e)
+                ErrorLog.logError(TAG, "解密响应失败: ${e.message}", e)
                 sendMessageToUi("解密响应失败: ${e.message}")
                 return emptyList()
             }

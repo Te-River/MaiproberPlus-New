@@ -210,7 +210,10 @@ fun AppContent() {
 
     when {
         GlobalViewModel.showMessageDialog -> {
-            InfoDialog(GlobalViewModel.localMessage.value ?: "") {
+            // 累计未读提示拼一行显，避免单次弹窗吞后续提示
+            val info = GlobalViewModel.pendingMessages.joinToString("\n\n")
+            InfoDialog(if (info.isBlank()) " " else info) {
+                GlobalViewModel.pendingMessages.clear()
                 GlobalViewModel.showMessageDialog = false
             }
         }

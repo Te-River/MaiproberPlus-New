@@ -23,6 +23,7 @@ import io.github.skydynamic.maiproberplus.core.prober.models.lxns.LxnsMaimaiResp
 import io.github.skydynamic.maiproberplus.core.prober.models.lxns.LxnsMaimaiScoreBody
 import io.github.skydynamic.maiproberplus.core.prober.models.lxns.LxnsUserInfoResponse
 import io.github.skydynamic.maiproberplus.core.prober.lxns.LxnsOAuthUtil
+import io.github.skydynamic.maiproberplus.core.utils.ErrorLog
 import io.github.skydynamic.maiproberplus.ui.compose.sync.SyncViewModel
 import io.ktor.client.call.body
 import io.ktor.client.plugins.HttpRequestTimeoutException
@@ -124,7 +125,7 @@ class LxnsProberUtil : IProberUtil {
                 }
             }
         } catch (e: Exception) {
-            Log.e("LxnsProberUtil", "上传失败: $e")
+            ErrorLog.logError("LxnsProberUtil", "上传失败: $e", e)
             sendMessageToUi("上传失败: $e")
             return false
         }
@@ -136,7 +137,7 @@ class LxnsProberUtil : IProberUtil {
             Log.d("LxnsProberUtil", "上传完毕")
         } else {
             sendMessageToUi("舞萌成绩上传到落雪查分器失败: ${postScoreResponseBody.message}")
-            Log.e("LxnsProberUtil", "上传失败: ${postScoreResponseBody.message}")
+            ErrorLog.logError("LxnsProberUtil", "上传失败: ${postScoreResponseBody.message}")
         }
         GlobalViewModel.maimaiHooking = false
         application.sendNotification("落雪查分器", "舞萌数据上传完毕")
@@ -183,7 +184,7 @@ class LxnsProberUtil : IProberUtil {
                 }
             }
         } catch (e: HttpRequestTimeoutException) {
-            Log.e("LxnsProberUtil", "上传失败: $e")
+            ErrorLog.logError("LxnsProberUtil", "上传失败: $e", e)
             sendMessageToUi("上传失败: $e")
             return
         }
@@ -194,7 +195,7 @@ class LxnsProberUtil : IProberUtil {
             Log.d("LxnsProberUtil", "上传完毕")
         } else {
             sendMessageToUi("上传中二成绩成绩到落雪查分器失败: ${postScoreResponseBody.message}")
-            Log.e("LxnsProberUtil", "上传失败: ${postScoreResponseBody.message}")
+            ErrorLog.logError("LxnsProberUtil", "上传失败: ${postScoreResponseBody.message}")
         }
         GlobalViewModel.chuniHooking = false
         application.sendNotification("落雪查分器", "中二数据上传完毕")
