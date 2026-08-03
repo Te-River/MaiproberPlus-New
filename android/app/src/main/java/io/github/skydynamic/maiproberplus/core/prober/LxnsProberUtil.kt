@@ -82,13 +82,14 @@ class LxnsProberUtil : IProberUtil {
 
     override suspend fun uploadMaimaiProberData(
         importToken: String,
-        authUrl: String
+        authUrl: String,
+        externalScores: List<MaimaiScoreEntity>?
     ) {
         val isCache = application.configManager.config.localConfig.cacheScore
 
         application.sendNotification("落雪查分器", "舞萌数据上传中")
         sendMessageToUi("开始获取舞萌数据并上传到落雪查分器")
-        val scores = getMaimaiScoreData(authUrl)
+        val scores = externalScores ?: getMaimaiScoreData(authUrl)
 
         if (scores.isEmpty()) {
             return
@@ -98,7 +99,8 @@ class LxnsProberUtil : IProberUtil {
             LxnsMaimaiScoreBody(
                 id = MaimaiData.getSongIdFromTitle(it.title),
                 levelIndex = it.diff.diffIndex,
-                achievements = it.achievement,
+                // 对齐 Mizuki _transform_for_lxns：原值 /10000 转浮点
+                achievements = it.achievement / 10000.0f,
                 fc = it.fullComboType.typeName,
                 fs = it.syncType.syncName,
                 dxScore = it.dxScore,

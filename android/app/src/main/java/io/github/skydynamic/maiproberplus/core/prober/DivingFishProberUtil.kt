@@ -17,6 +17,7 @@ import io.github.skydynamic.maiproberplus.core.prober.models.divingfish.DivingFi
 import io.github.skydynamic.maiproberplus.core.prober.models.divingfish.DivingFishPlayerProfile
 import io.github.skydynamic.maiproberplus.core.utils.ParseScorePageUtil
 import io.ktor.client.call.body
+import kotlinx.serialization.json.Json
 import io.ktor.client.request.get
 import io.ktor.client.request.headers
 import io.ktor.client.request.post
@@ -43,13 +44,66 @@ class DivingFishProberUtil : IProberUtil {
 
     override suspend fun uploadMaimaiProberData(
         importToken: String,
-        authUrl: String
+        authUrl: String,
+        externalScores: List<MaimaiScoreEntity>?
     ) {
         val isCache = application.configManager.config.localConfig.cacheScore
-        val scores = mutableListOf<MaimaiScoreEntity>()
 
         application.sendNotification("水鱼查分器", "正在进行查分")
         sendMessageToUi("开始获取舞萌DX数据并上传到水鱼查分器")
+
+        // externalScores 非空（如 Rival 同步拉的对手成绩）：跳过 VPN 抓包 pageparser，
+        // 直接转 DivingFishMaimaiScoreBody POST 给水鱼 update_records。
+        // 对齐 Mizuki lib_fish._transform_for_fish + upload_to_fish。
+        if (externalScores != null) {
+            if (externalScores.isEmpty()) {
+                sendMessageToUi("通过 Rival 同步失败：未拉到对手成绩")
+                return
+            }
+            val payload = externalScores.map {
+                DivingFishMaimaiScoreBody(
+                    songId = MaimaiData.getSongIdFromTitle(it.title),
+                    title = it.title,
+                    level = it.level.toString(),
+                    levelIndex = it.diff.diffIndex,
+                    type = it.type.type2,  // "SD"/"DX"/"UTAGE"
+                    achievements = it.achievement / 10000.0f,  // 对齐 Mizuki /10000
+                    dxScore = it.dxScore,
+                    rate = it.rankType.rank,
+                    fc = it.fullComboType.typeName,
+                    fs = it.syncType.syncName,
+                    levelLabel = "",
+                    ra = it.rating
+                )
+            }
+            val bodyStr = Json.encodeToString(
+                kotlinx.serialization.builtins.ListSerializer(DivingFishMaimaiScoreBody.serializer()),
+                payload
+            )
+            try {
+                val postResult = client.post("$baseApiUrl/maimaidxprober/player/update_records") {
+                    headers {
+                        append("Import-Token", importToken)
+                        append(HttpHeaders.ContentType, "application/json")
+                    }
+                    contentType(ContentType.Application.Json)
+                    setBody(bodyStr)
+                }
+                Log.i("DivingFishProberUtil", "通过 Rival 同步已上传 ${externalScores.size} 条成绩到水鱼查分器, 接口信息: ${postResult.bodyAsText()}")
+                sendMessageToUi("通过 Rival 同步已上传 ${externalScores.size} 条成绩到水鱼查分器")
+            } catch (e: Exception) {
+                Log.e("DivingFishProberUtil", "通过 Rival 同步上传水鱼失败", e)
+                sendMessageToUi("通过 Rival 同步上传水鱼失败: ${e.message}")
+            }
+            if (isCache) {
+                writeMaimaiScoreCache(externalScores)
+            }
+            GlobalViewModel.maimaiHooking = false
+            application.sendNotification("水鱼查分器", "查分完毕")
+            return
+        }
+
+        val scores = mutableListOf<MaimaiScoreEntity>()
         fetchMaimaiScorePage(authUrl) { diff, body ->
             Log.i("DivingFishProberUtil", "正在上传${diff.diffName}成绩到水鱼查分器")
             try {

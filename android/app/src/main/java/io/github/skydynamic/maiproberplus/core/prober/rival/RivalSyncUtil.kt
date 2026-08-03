@@ -2,12 +2,15 @@ package io.github.skydynamic.maiproberplus.core.prober.rival
 
 import android.util.Log
 import io.github.skydynamic.maiproberplus.Application.Companion.application
+import io.github.skydynamic.maiproberplus.GlobalViewModel
 import io.github.skydynamic.maiproberplus.core.data.maimai.MaimaiData
 import io.github.skydynamic.maiproberplus.core.data.maimai.MaimaiEnums
 import io.github.skydynamic.maiproberplus.core.database.entity.MaimaiScoreEntity
 import io.github.skydynamic.maiproberplus.core.config.RivalSyncConfig
+import io.github.skydynamic.maiproberplus.core.prober.ProberPlatform
 import io.github.skydynamic.maiproberplus.core.prober.client
 import io.github.skydynamic.maiproberplus.core.prober.sendMessageToUi
+import io.github.skydynamic.maiproberplus.ui.compose.sync.SyncViewModel
 import io.ktor.client.request.header
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
@@ -77,6 +80,38 @@ object RivalSyncUtil {
         val syncStatus: Int = 0,
         val deluxscoreMax: Int = 0
     )
+
+    /**
+     * 类型一完整流程：拉对手成绩 → 上传到当前选定查分器（落雪 OAuth / 水鱼 Token / 本地）。
+     * 对齐 Mizuki lib_sync_core._upload_to_platforms：拉 Rival 成绩后转查分器格式上传。
+     * 上传走现成 IProberUtil.uploadMaimaiProberData，externalScores 传 Rival 拉的成绩跳过 VPN 抓包。
+     */
+    suspend fun uploadToProber() {
+        val platform = GlobalViewModel.proberPlatform
+        if (platform == ProberPlatform.LOCAL) {
+            sendMessageToUi("Rival 同步不支持本地查分器，请选落雪或水鱼")
+            return
+        }
+        sendMessageToUi("开始拉对手成绩并上传到${platform.proberName}")
+        val scores = fetchRivalScores()
+        if (scores.isEmpty()) {
+            sendMessageToUi("通过 Rival 同步失败：未拉到对手成绩，请检查 Rival 设置")
+            return
+        }
+        val config = application.configManager.config
+        val importToken = when (platform) {
+            ProberPlatform.LXNS -> {
+                if (SyncViewModel.tokenInputMode == 1) "" else config.lxnsToken
+            }
+            ProberPlatform.DIVING_FISH -> config.divingfishToken
+            ProberPlatform.LOCAL -> ""
+        }
+        platform.factory.uploadMaimaiProberData(
+            importToken = importToken,
+            authUrl = "",
+            externalScores = scores
+        )
+    }
 
     /** QR 鉴权：POST authServerUrl，拿 userId/token 存本地。返回是否成功。 */
     suspend fun authByQr(qrCode: String): Boolean {

@@ -5,11 +5,22 @@ import io.github.skydynamic.maiproberplus.Application.Companion.application
 import io.github.skydynamic.maiproberplus.GlobalViewModel
 import io.github.skydynamic.maiproberplus.core.data.chuni.ChuniScoreManager.writeChuniScoreCache
 import io.github.skydynamic.maiproberplus.core.data.maimai.MaimaiScoreManager.writeMaimaiScoreCache
+import io.github.skydynamic.maiproberplus.core.database.entity.MaimaiScoreEntity
 
 class LocalProberUtil : IProberUtil {
-    override suspend fun uploadMaimaiProberData(importToken: String, authUrl: String) {
+    override suspend fun uploadMaimaiProberData(
+        importToken: String,
+        authUrl: String,
+        externalScores: List<MaimaiScoreEntity>?
+    ) {
         application.sendNotification("本地查分器", "正在进行查分")
         sendMessageToUi("开始获取舞萌DX成绩并缓存到本地")
+        if (externalScores != null) {
+            writeMaimaiScoreCache(externalScores)
+            sendMessageToUi("已缓存 ${externalScores.size} 条舞萌DX成绩到本地")
+            application.sendNotification("本地查分器", "缓存完毕")
+            return
+        }
 
         writeMaimaiScoreCache(getMaimaiScoreData(authUrl))
 

@@ -488,10 +488,10 @@ fun SyncCompose() {
                     .padding(15.dp)
                     .size(300.dp, 50.dp),
                 onClick = {
-                    // 通过 Rivral 同步：先 QR 鉴权（本地无 userId 时弹输入框），再拉对手成绩写本地缓存。
+                    // 通过 Rival 同步：类型一流程，拉对手成绩后上传到当前选定查分器（落雪 OAuth / 氵鱼 Token）。
                     // 类型一仅对舞萌 DX 生效，中二节奏无 Rival API。
                     if (globalViewModel.gameType != GameType.MaimaiDX) {
-                        sendMessageToUi("通过 Rivral 同步仅支持舞萌 DX")
+                        sendMessageToUi("通过 Rival 同步仅支持舞萌 DX")
                         return@Button
                     }
                     val cfg = application.configManager.config.rivalSyncConfig
@@ -500,13 +500,7 @@ fun SyncCompose() {
                         return@Button
                     }
                     GlobalViewModel.viewModelScope.launch(Dispatchers.IO) {
-                        val scores = RivalSyncUtil.fetchRivalScores()
-                        if (scores.isNotEmpty()) {
-                            writeMaimaiScoreCache(scores)
-                            sendMessageToUi("通过 Rivral 同步完成，共 ${scores.size} 条")
-                        } else {
-                            sendMessageToUi("通过 Rivral 同步失败：未拉到成绩，请检查 Rival 设置")
-                        }
+                        RivalSyncUtil.uploadToProber()
                     }
                 }
             ) {
