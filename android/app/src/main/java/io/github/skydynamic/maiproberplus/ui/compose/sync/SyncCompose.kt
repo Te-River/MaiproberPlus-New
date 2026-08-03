@@ -487,6 +487,17 @@ fun SyncCompose() {
                     .padding(15.dp)
                     .size(300.dp, 50.dp),
                 onClick = {
+                    // 通过 Rivral 同步（占位，后续接入功能）
+                }
+            ) {
+                Text("通过 Rivral 同步")
+            }
+
+            Button(
+                modifier = Modifier
+                    .padding(15.dp)
+                    .size(300.dp, 50.dp),
+                onClick = {
                     application.copyTextToClipboard("http://127.0.0.2:${HttpServer.Port}/${globalViewModel.gameType.ordinal}")
                 }
             ) {
