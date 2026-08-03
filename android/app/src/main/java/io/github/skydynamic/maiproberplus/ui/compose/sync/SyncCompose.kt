@@ -3,10 +3,15 @@ package io.github.skydynamic.maiproberplus.ui.compose.sync
 import android.app.Activity
 import android.content.Context
 import android.content.Intent
+import android.net.Uri
 import android.net.VpnService
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -25,6 +30,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
@@ -34,18 +40,22 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import io.github.skydynamic.maiproberplus.Application.Companion.application
 import io.github.skydynamic.maiproberplus.GlobalViewModel
 import io.github.skydynamic.maiproberplus.core.data.GameType
 import io.github.skydynamic.maiproberplus.core.data.chuni.ChuniScoreManager.writeChuniScoreCache
 import io.github.skydynamic.maiproberplus.core.data.maimai.MaimaiScoreManager.writeMaimaiScoreCache
 import io.github.skydynamic.maiproberplus.core.prober.ProberPlatform
+import io.github.skydynamic.maiproberplus.core.prober.lxns.LxnsOAuthUtil
 import io.github.skydynamic.maiproberplus.core.prober.sendMessageToUi
 import io.github.skydynamic.maiproberplus.core.proxy.HttpServer
 import io.github.skydynamic.maiproberplus.ui.component.ConfirmDialog
@@ -56,8 +66,6 @@ import io.github.skydynamic.maiproberplus.ui.compose.scores.refreshScore
 import io.github.skydynamic.maiproberplus.ui.compose.scores.resources
 import io.github.skydynamic.maiproberplus.ui.compose.setting.PasswordTextFiled
 import io.github.skydynamic.maiproberplus.vpn.core.LocalVpnService
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -88,6 +96,13 @@ fun SyncCompose() {
                     val token = when (globalViewModel.proberPlatform) {
                         ProberPlatform.DIVING_FISH ->
                             application.configManager.config.divingfishToken
+                        // 落雪 OAuth 模式下用 access_token（prober 内部会自动刷新），
+                        // Token 模式沿用 personal lxnsToken。
+                        ProberPlatform.LXNS ->
+                            if (SyncViewModel.tokenInputMode == 1)
+                                application.configManager.config.lxnsOAuthAccessToken
+                            else
+                                application.configManager.config.lxnsToken
                         else ->
                             application.configManager.config.lxnsToken
                     }
@@ -122,6 +137,13 @@ fun SyncCompose() {
                     val token = when (globalViewModel.proberPlatform) {
                         ProberPlatform.DIVING_FISH ->
                             application.configManager.config.divingfishToken
+                        // 落雪 OAuth 模式下用 access_token（prober 内部会自动刷新），
+                        // Token 模式沿用 personal lxnsToken。
+                        ProberPlatform.LXNS ->
+                            if (SyncViewModel.tokenInputMode == 1)
+                                application.configManager.config.lxnsOAuthAccessToken
+                            else
+                                application.configManager.config.lxnsToken
                         else ->
                             application.configManager.config.lxnsToken
                     }
@@ -249,6 +271,42 @@ fun SyncCompose() {
                 }
             }
 
+            // 落雪查分器选中时，在游戏选择行原位置渐次出现 OAuth / Token 切换按钮，
+            // 游戏选择行随之被推下移；切到其它查分器时该行收缩消失，游戏行复位。
+            // 用 AnimatedVisibility + expandVertically/shrinkVertically 实现下移动画。
+            AnimatedVisibility(
+                visible = globalViewModel.proberPlatform == ProberPlatform.LXNS,
+                enter = expandVertically() + fadeIn(),
+                exit = shrinkVertically() + fadeOut()
+            ) {
+                SingleChoiceSegmentedButtonRow(
+                    modifier = Modifier
+                        .padding(horizontal = 16.dp)
+                        .padding(top = 8.dp)
+                        .fillMaxWidth()
+                ) {
+                    val tokenInputMode = SyncViewModel.tokenInputMode
+                    SegmentedButton(
+                        shape = SegmentedButtonDefaults.itemShape(
+                            index = 0, count = 2
+                        ),
+                        selected = tokenInputMode == 1,
+                        onClick = { SyncViewModel.tokenInputMode = 1 }
+                    ) {
+                        Text("OAuth")
+                    }
+                    SegmentedButton(
+                        shape = SegmentedButtonDefaults.itemShape(
+                            index = 1, count = 2
+                        ),
+                        selected = tokenInputMode == 0,
+                        onClick = { SyncViewModel.tokenInputMode = 0 }
+                    ) {
+                        Text("Token")
+                    }
+                }
+            }
+
             SingleChoiceSegmentedButtonRow(
                 modifier = Modifier
                     .padding(horizontal = 16.dp)
@@ -271,37 +329,148 @@ fun SyncCompose() {
                 }
             }
 
-            PasswordTextFiled(
-                modifier = Modifier
-                    .padding(15.dp)
-                    .fillMaxWidth()
-                    .height(75.dp),
-                label = { Text("查分器Token") },
-                icon = { Icon(Icons.Filled.Lock, null) },
-                hidden = SyncViewModel.tokenHidden,
-                value = when (globalViewModel.proberPlatform) {
-                    ProberPlatform.DIVING_FISH -> divingfishToken
-                    ProberPlatform.LXNS -> lxnsToken
-                    ProberPlatform.LOCAL -> ""
-                },
-                onTrailingIconClick = { SyncViewModel.tokenHidden = !SyncViewModel.tokenHidden },
-                onValueChange = {
-                    when (globalViewModel.proberPlatform) {
-                        ProberPlatform.DIVING_FISH -> {
-                            divingfishToken = it
-                            application.configManager.config.divingfishToken = it
-                        }
+            // 落雪 + OAuth 模式：授权码输入框 + 前往授权 + 已授权状态 + 取消授权；
+            // 其它情况沿用原 Token 输入框。
+            // 两侧都用 AnimatedVisibility + expand/shrinkVertically + fade，遵循 Material Motion，
+            // 切到落雪时 OAuth 那段渐次展开、Token 输入框渐次收起，切走时反过来，不瞬间蹦。
+            val isLxnsOAuth =
+                globalViewModel.proberPlatform == ProberPlatform.LXNS &&
+                    SyncViewModel.tokenInputMode == 1
+            val coroutineScope = rememberCoroutineScope()
+            var oauthCode by remember { mutableStateOf("") }
+            var oauthExchanging by remember { mutableStateOf(false) }
+            val oauthAuthorized = remember { mutableStateOf(LxnsOAuthUtil.isAuthorized()) }
 
-                        else -> {
-                            lxnsToken = it
-                            application.configManager.config.lxnsToken = it
+            AnimatedVisibility(
+                visible = isLxnsOAuth,
+                enter = expandVertically() + fadeIn(),
+                exit = shrinkVertically() + fadeOut()
+            ) {
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    // 已授权 / 未授权两态也走 AnimatedVisibility，按 oauthAuthorized.value 切，不瞬间蹦。
+                    AnimatedVisibility(
+                        visible = oauthAuthorized.value,
+                        enter = expandVertically() + fadeIn(),
+                        exit = shrinkVertically() + fadeOut()
+                    ) {
+                        Column(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Text(
+                                text = "已授权落雪（OAuth）",
+                                modifier = Modifier.padding(top = 15.dp)
+                            )
+                            Button(
+                                modifier = Modifier
+                                    .padding(15.dp)
+                                    .size(300.dp, 50.dp),
+                                onClick = {
+                                    LxnsOAuthUtil.clearTokens()
+                                    oauthAuthorized.value = false
+                                    sendMessageToUi("已取消落雪授权")
+                                }
+                            ) {
+                                Text("取消授权")
+                            }
                         }
                     }
-                    
-                },
-                enable = globalViewModel.proberPlatform != ProberPlatform.LOCAL,
-                horizontalDivider = false,
-            )
+                    AnimatedVisibility(
+                        visible = !oauthAuthorized.value,
+                        enter = expandVertically() + fadeIn(),
+                        exit = shrinkVertically() + fadeOut()
+                    ) {
+                        Column(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Button(
+                                modifier = Modifier
+                                    .padding(15.dp)
+                                    .size(300.dp, 50.dp),
+                                onClick = {
+                                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(LxnsOAuthUtil.getAuthorizeUrl()))
+                                    intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                                    application.startActivity(intent)
+                                }
+                            ) {
+                                Text("前往落雪授权")
+                            }
+
+                            OutlinedTextField(
+                                value = oauthCode,
+                                onValueChange = { oauthCode = it },
+                                singleLine = true,
+                                label = { Text("授权码") },
+                                modifier = Modifier
+                                    .padding(15.dp)
+                                    .fillMaxWidth(),
+                                enabled = !oauthExchanging
+                            )
+
+                            Button(
+                                modifier = Modifier
+                                    .padding(15.dp)
+                                    .size(300.dp, 50.dp),
+                                enabled = oauthCode.isNotBlank() && !oauthExchanging,
+                                onClick = {
+                                    oauthExchanging = true
+                                    coroutineScope.launch(Dispatchers.IO) {
+                                        val ok = LxnsOAuthUtil.exchangeCodeForToken(oauthCode)
+                                        oauthExchanging = false
+                                        if (ok) {
+                                            oauthAuthorized.value = true
+                                            oauthCode = ""
+                                        }
+                                    }
+                                }
+                            ) {
+                                Text(if (oauthExchanging) "换取中..." else "用授权码换取 Token")
+                            }
+                        }
+                    }
+                }
+            }
+            AnimatedVisibility(
+                visible = !isLxnsOAuth,
+                enter = expandVertically() + fadeIn(),
+                exit = shrinkVertically() + fadeOut()
+            ) {
+                PasswordTextFiled(
+                    modifier = Modifier
+                        .padding(15.dp)
+                        .fillMaxWidth()
+                        .height(75.dp),
+                    label = { Text("查分器Token") },
+                    icon = { Icon(Icons.Filled.Lock, null) },
+                    hidden = SyncViewModel.tokenHidden,
+                    value = when (globalViewModel.proberPlatform) {
+                        ProberPlatform.DIVING_FISH -> divingfishToken
+                        ProberPlatform.LXNS -> lxnsToken
+                        ProberPlatform.LOCAL -> ""
+                    },
+                    onTrailingIconClick = { SyncViewModel.tokenHidden = !SyncViewModel.tokenHidden },
+                    onValueChange = {
+                        when (globalViewModel.proberPlatform) {
+                            ProberPlatform.DIVING_FISH -> {
+                                divingfishToken = it
+                                application.configManager.config.divingfishToken = it
+                            }
+
+                            else -> {
+                                lxnsToken = it
+                                application.configManager.config.lxnsToken = it
+                            }
+                        }
+
+                    },
+                    enable = globalViewModel.proberPlatform != ProberPlatform.LOCAL,
+                    horizontalDivider = false,
+                )
+            }
         }
     }
 

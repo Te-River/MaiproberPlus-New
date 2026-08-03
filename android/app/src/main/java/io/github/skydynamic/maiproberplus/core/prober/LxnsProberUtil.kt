@@ -22,6 +22,8 @@ import io.github.skydynamic.maiproberplus.core.prober.models.lxns.LxnsMaimaiRequ
 import io.github.skydynamic.maiproberplus.core.prober.models.lxns.LxnsMaimaiResponse
 import io.github.skydynamic.maiproberplus.core.prober.models.lxns.LxnsMaimaiScoreBody
 import io.github.skydynamic.maiproberplus.core.prober.models.lxns.LxnsUserInfoResponse
+import io.github.skydynamic.maiproberplus.core.prober.lxns.LxnsOAuthUtil
+import io.github.skydynamic.maiproberplus.ui.compose.sync.SyncViewModel
 import io.ktor.client.call.body
 import io.ktor.client.plugins.HttpRequestTimeoutException
 import io.ktor.client.request.get
@@ -39,9 +41,28 @@ class LxnsProberUtil : IProberUtil {
 
     private val baseApiUrl = "https://maimai.lxns.net"
 
+    /**
+     * 按当前 Token 输入模式解析请求头：OAuth 模式（tokenInputMode==1）走
+     * `Authorization: Bearer <access_token>`（必要时刷新），Token 模式沿用
+     * `X-User-Token: <personal_token>`。返回 null 表示 OAuth 失效需重新授权。
+     */
+    private suspend fun resolveAuthHeader(importToken: String): Pair<String, String>? {
+        return if (SyncViewModel.tokenInputMode == 1) {
+            val accessToken = LxnsOAuthUtil.ensureValidAccessToken()
+                ?: return null
+            "Authorization" to "Bearer $accessToken"
+        } else {
+            "X-User-Token" to importToken
+        }
+    }
+
     override suspend fun updateUserInfo(importToken: String) {
+        val auth = resolveAuthHeader(importToken) ?: run {
+            sendMessageToUi("落雪授权已失效，请重新授权")
+            return
+        }
         val resp = client.get("https://maimai.lxns.net/api/v0/user/maimai/player") {
-            header("X-User-Token", importToken)
+            header(auth.first, auth.second)
         }
         if (resp.status.value == 200) {
             val data = resp.body<LxnsUserInfoResponse>().data
@@ -88,9 +109,13 @@ class LxnsProberUtil : IProberUtil {
         val body = Json.encodeToString(LxnsMaimaiRequestBody(postScores))
 
         val postResponse = try {
+            val auth = resolveAuthHeader(importToken) ?: run {
+                sendMessageToUi("落雪授权已失效，请重新授权")
+                return
+            }
             client.post("$baseApiUrl/api/v0/user/maimai/player/scores") {
                 setBody(body)
-                header("X-User-Token", importToken)
+                header(auth.first, auth.second)
                 headers {
                     append(HttpHeaders.ContentType, "application/json")
                 }
@@ -141,10 +166,14 @@ class LxnsProberUtil : IProberUtil {
         val body = Json.encodeToString(LxnsChuniRequestBody(postScores))
 
         val postResponse = try {
+            val auth = resolveAuthHeader(importToken) ?: run {
+                sendMessageToUi("落雪授权已失效，请重新授权")
+                return
+            }
             client.post("$baseApiUrl/api/v0/user/chunithm/player/scores") {
                 setBody(body)
                 headers {
-                    append("X-User-Token", importToken)
+                    append(auth.first, auth.second)
                     append(HttpHeaders.ContentType, "application/json")
                 }
             }
@@ -171,8 +200,12 @@ class LxnsProberUtil : IProberUtil {
 
     override suspend fun getMaimaiProberData(importToken: String): List<MaimaiScoreEntity> {
         try {
+            val auth = resolveAuthHeader(importToken) ?: run {
+                sendMessageToUi("落雪授权已失效，请重新授权")
+                return emptyList()
+            }
             val response = client.get("$baseApiUrl/api/v0/user/maimai/player/scores") {
-                header("X-User-Token", importToken)
+                header(auth.first, auth.second)
             }
             if (response.status.value != 200) {
                 sendMessageToUi("获取舞萌数据失败, API返回体: ${response.bodyAsText()}")
@@ -213,8 +246,12 @@ class LxnsProberUtil : IProberUtil {
 
     override suspend fun getChuniProberData(importToken: String): List<ChuniScoreEntity> {
         try {
+            val auth = resolveAuthHeader(importToken) ?: run {
+                sendMessageToUi("落雪授权已失效，请重新授权")
+                return emptyList()
+            }
             val response = client.get("$baseApiUrl/api/v0/user/chunithm/player/scores") {
-                header("X-User-Token", importToken)
+                header(auth.first, auth.second)
             }
             val body = response.body<LxnsGetChuniScoreResponse>()
             val parseList = addChuniScoreDataToList(
@@ -232,8 +269,12 @@ class LxnsProberUtil : IProberUtil {
 
     override suspend fun getChuniScoreBests(importToken: String): List<ChuniScoreEntity> {
         try {
+            val auth = resolveAuthHeader(importToken) ?: run {
+                sendMessageToUi("落雪授权已失效，请重新授权")
+                return emptyList()
+            }
             val response = client.get("$baseApiUrl/api/v0/user/chunithm/player/bests") {
-                header("X-User-Token", importToken)
+                header(auth.first, auth.second)
             }
             val body = response.body<LxnsGetChuniScoreBestsResponse>()
             var parseList = addChuniScoreDataToList(

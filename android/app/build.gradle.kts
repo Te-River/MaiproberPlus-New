@@ -37,6 +37,19 @@ android {
         versionNameSuffix = "-$gitCommitId"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+        // 落雪 OAuth 接入：client_id 与 client_secret 均经环境变量注入，
+        // 由一键构建脚本填充，不上传脚本、不入仓库。缺失则构建中止。
+        val lxnsOAuthClientId = System.getenv("LXNS_OAUTH_CLIENT_ID")
+        val lxnsOAuthClientSecret = System.getenv("LXNS_OAUTH_CLIENT_SECRET")
+        if (lxnsOAuthClientId.isNullOrEmpty() || lxnsOAuthClientSecret.isNullOrEmpty()) {
+            throw GradleException(
+                "缺少 LXNS_OAUTH_CLIENT_ID / LXNS_OAUTH_CLIENT_SECRET 环境变量，" +
+                    "请通过一键构建脚本填充后再构建。"
+            )
+        }
+        buildConfigField("String", "LXNS_OAUTH_CLIENT_ID", "\"$lxnsOAuthClientId\"")
+        buildConfigField("String", "LXNS_OAUTH_CLIENT_SECRET", "\"$lxnsOAuthClientSecret\"")
     }
 
     buildTypes {

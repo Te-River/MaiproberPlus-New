@@ -73,6 +73,10 @@ enum class ScoreStyleType(val displayName: String) {
 data class ConfigStorage(
     var divingfishToken: String = "",
     var lxnsToken: String = "",
+    // 落雪 OAuth 令牌：OAuth 模式下优先使用，与 personal lxnsToken 并存。
+    var lxnsOAuthAccessToken: String = "",
+    var lxnsOAuthRefreshToken: String = "",
+    var lxnsOAuthAccessTokenExpireAt: Long = 0, // epoch ms，access_token 过期时间
     var syncConfig: SyncConfig = SyncConfig(),
     var localConfig: LocalConfig = LocalConfig(),
     var userInfo: UserInfo = UserInfo(),
