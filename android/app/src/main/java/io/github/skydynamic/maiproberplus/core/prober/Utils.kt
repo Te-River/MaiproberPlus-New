@@ -3,6 +3,7 @@ package io.github.skydynamic.maiproberplus.core.prober
 import android.util.Log
 import io.github.skydynamic.maiproberplus.Application.Companion.application
 import io.github.skydynamic.maiproberplus.GlobalViewModel
+import androidx.lifecycle.viewModelScope
 import io.github.skydynamic.maiproberplus.core.data.chuni.ChuniEnums
 import io.github.skydynamic.maiproberplus.core.data.chuni.ChuniScoreManager.writeChuniScoreCache
 import io.github.skydynamic.maiproberplus.core.data.maimai.MaimaiEnums
@@ -69,9 +70,11 @@ val chuniUrls = listOf(
 )
 
 fun sendMessageToUi(message: String) {
-     CoroutineScope(Dispatchers.Main).launch {
+    // 用 GlobalViewModel.viewModelScope（已和 UI 绑定，生命周期受控），
+    // 避免临时 CoroutineScope 在连续发多条提示时被吞或延迟
+    GlobalViewModel.viewModelScope.launch(Dispatchers.Main) {
         GlobalViewModel.sendAndShowMessage(message)
-     }
+    }
 }
 
 suspend fun getMaimaiScoreData(authUrl: String) : List<MaimaiScoreEntity> {

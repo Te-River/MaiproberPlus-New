@@ -79,7 +79,9 @@ object GlobalViewModel : ViewModel() {
     private val _localMessage = MutableLiveData<String>()
     val localMessage: LiveData<String> get() = _localMessage
     fun sendAndShowMessage(message: String) {
-        _localMessage.value = message
+        // postValue 保证主线程异步触发 observer，避免 value 同值不重发或
+        // 在非主线程调用时 observer 触发时机被吞导致弹窗不显
+        _localMessage.postValue(message)
     }
 
     private val _needUpdate = MutableLiveData<Boolean>()
