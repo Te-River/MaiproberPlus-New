@@ -273,13 +273,14 @@ object MaimaiB50GenerateUtil {
 
         val config = application.configManager.config
 
-        // B35 = 老曲子（isOld）或版本号 < 25000 的曲子；B15 = 新曲子（!isOld）且版本号 ≥ 25000。
-        // 老曲子即使在新版（≥25.0）里仍存在并被标了 version=25000，也不应误算进 B15。
-        val b35Score = scores.filter { it.isOld || it.version < 25000 }
+        // B35 = 老曲子（isOld）或版本号 < 25500 的曲子；B15 = 新曲子（!isOld）且版本号 ≥ 25500。
+        // 阈值 25500 与 ConfigStorage.lxnsRomVersionThreshold 对齐（落雪 ROM 版本阈值）。
+        // 老曲子即使在新版（≥25.50）里仍存在并被标了 version=25500，也不应误算进 B15。
+        val b35Score = scores.filter { it.isOld || it.version < 25500 }
             .sortedByDescending { it.rating }
             .take(35)
 
-        val b15Score = scores.filter { !it.isOld && it.version >= 25000 }
+        val b15Score = scores.filter { !it.isOld && it.version >= 25500 }
             .sortedByDescending { it.rating }
             .take(15)
 

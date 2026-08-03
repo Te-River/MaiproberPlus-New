@@ -45,6 +45,7 @@ import io.github.skydynamic.maiproberplus.core.data.GameType
 import io.github.skydynamic.maiproberplus.core.data.maimai.MaimaiScoreManager.getMaimaiScoreCache
 import io.github.skydynamic.maiproberplus.core.prober.ProberPlatform
 import io.github.skydynamic.maiproberplus.core.prober.sendMessageToUi
+import io.github.skydynamic.maiproberplus.ui.compose.sync.SyncViewModel
 import io.github.skydynamic.maiproberplus.core.utils.ChuniB30ImageGenerater
 import io.github.skydynamic.maiproberplus.core.utils.MaimaiB50GenerateUtil
 import io.github.skydynamic.maiproberplus.ui.component.ImagePreview
@@ -235,14 +236,16 @@ fun ColumnScope.MaiContent(
                         }
                     }
                     ProberPlatform.LXNS -> {
-                        if (config.lxnsToken.isEmpty()) {
+                        // OAuth 模式下用 lxnsOAuthAccessToken（无需 lxnsToken）；
+                        // Token 模式沿用 lxnsToken。两者皆空才提示。
+                        val lxnsToken = if (SyncViewModel.tokenInputMode == 1)
+                            config.lxnsOAuthAccessToken else config.lxnsToken
+                        if (lxnsToken.isEmpty()) {
                             sendMessageToUi("请先设置落雪查分器Token")
                             BestsImageGenerateViewModel.canGenerate = true
                             return@launch
                         } else {
-                            GlobalViewModel.proberPlatform.factory.getMaimaiProberData(
-                                config.lxnsToken
-                            )
+                            GlobalViewModel.proberPlatform.factory.getMaimaiProberData(lxnsToken)
                         }
                     }
                     ProberPlatform.LOCAL -> getMaimaiScoreCache()
@@ -279,14 +282,16 @@ fun ColumnScope.ChuniContent(
                         }
                     }
                     ProberPlatform.LXNS -> {
-                        if (config.lxnsToken.isEmpty()) {
+                        // OAuth 模式下用 lxnsOAuthAccessToken（无需 lxnsToken）；
+                        // Token 模式沿用 lxnsToken。两者皆空才提示。
+                        val lxnsToken = if (SyncViewModel.tokenInputMode == 1)
+                            config.lxnsOAuthAccessToken else config.lxnsToken
+                        if (lxnsToken.isEmpty()) {
                             sendMessageToUi("请先设置落雪查分器Token")
                             BestsImageGenerateViewModel.canGenerate = true
                             return@launch
                         } else {
-                            GlobalViewModel.proberPlatform.factory.getChuniScoreBests(
-                                config.lxnsToken
-                            )
+                            GlobalViewModel.proberPlatform.factory.getChuniScoreBests(lxnsToken)
                         }
                     }
                     ProberPlatform.LOCAL -> {
