@@ -57,7 +57,7 @@ class DivingFishProberUtil : IProberUtil {
         // 对齐 Mizuki lib_fish._transform_for_fish + upload_to_fish。
         if (externalScores != null) {
             if (externalScores.isEmpty()) {
-                sendMessageToUi("通过 Rival 同步失败：未拉到对手成绩")
+                sendMessageToUi("通过 Rival 同步失败：未拉到成绩")
                 return
             }
             val payload = externalScores.map {

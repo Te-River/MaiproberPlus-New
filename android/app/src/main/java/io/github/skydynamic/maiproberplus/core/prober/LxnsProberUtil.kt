@@ -92,7 +92,7 @@ class LxnsProberUtil : IProberUtil {
         val scores = externalScores ?: getMaimaiScoreData(authUrl)
 
         if (scores.isEmpty()) {
-            sendMessageToUi("通过 Rival 同步失败：未拉到对手成绩，请检查 Rival 设置")
+            sendMessageToUi("通过 Rival 同步失败：未拉到成绩，请检查 Rival 设置")
             return
         }
 

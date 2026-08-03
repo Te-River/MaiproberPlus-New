@@ -95,7 +95,7 @@ object RivalSyncUtil {
         sendMessageToUi("开始拉取成绩并上传到${platform.proberName}")
         val scores = fetchRivalScores()
         if (scores.isEmpty()) {
-            sendMessageToUi("通过 Rival 同步失败：未拉到对手成绩，请检查 Rival 设置")
+            sendMessageToUi("通过 Rival 同步失败：未拉到成绩，请检查 Rival 设置")
             return
         }
         val config = application.configManager.config
