@@ -2,6 +2,8 @@ package io.github.skydynamic.maiproberplus.ui.compose.scores.chuni
 
 import android.icu.math.BigDecimal
 import android.util.Log
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
@@ -174,8 +176,8 @@ fun ChuniScoreDetailDialog(
                             }
                             androidx.compose.animation.AnimatedVisibility(
                                 visible = scoreTitleScrollState.canScrollBackward,
-                                enter = slideInHorizontally { -it } + fadeIn(),
-                                exit = slideOutHorizontally { -it } + fadeOut(),
+                                enter = slideInHorizontally(animationSpec = tween(300, easing = FastOutSlowInEasing)) { -it } + fadeIn(animationSpec = tween(300, easing = FastOutSlowInEasing)),
+                                exit = slideOutHorizontally(animationSpec = tween(300, easing = FastOutSlowInEasing)) { -it } + fadeOut(animationSpec = tween(300, easing = FastOutSlowInEasing)),
                                 modifier = Modifier
                                     .align(Alignment.CenterStart)
                             ) {
@@ -195,8 +197,8 @@ fun ChuniScoreDetailDialog(
                             }
                             androidx.compose.animation.AnimatedVisibility(
                                 visible = scoreTitleScrollState.canScrollForward,
-                                enter = slideInHorizontally { it } + fadeIn(),
-                                exit = slideOutHorizontally { it } + fadeOut(),
+                                enter = slideInHorizontally(animationSpec = tween(300, easing = FastOutSlowInEasing)) { it } + fadeIn(animationSpec = tween(300, easing = FastOutSlowInEasing)),
+                                exit = slideOutHorizontally(animationSpec = tween(300, easing = FastOutSlowInEasing)) { it } + fadeOut(animationSpec = tween(300, easing = FastOutSlowInEasing)),
                                 modifier = Modifier
                                     .align(Alignment.CenterEnd)
                             ) {

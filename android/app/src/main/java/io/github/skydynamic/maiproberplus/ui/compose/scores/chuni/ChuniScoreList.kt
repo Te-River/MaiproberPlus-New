@@ -1,6 +1,8 @@
 package io.github.skydynamic.maiproberplus.ui.compose.scores.chuni
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
@@ -298,8 +300,8 @@ fun ChuniScoreList(
 
     AnimatedVisibility(
         visible = gridState.canScrollBackward,
-        enter = scaleIn(initialScale = 0.8f) + fadeIn(),
-        exit = scaleOut(targetScale = 0.8f) + fadeOut()
+        enter = scaleIn(animationSpec = tween(300, easing = FastOutSlowInEasing), initialScale = 0.8f) + fadeIn(animationSpec = tween(300, easing = FastOutSlowInEasing)),
+        exit = scaleOut(animationSpec = tween(300, easing = FastOutSlowInEasing), targetScale = 0.8f) + fadeOut(animationSpec = tween(300, easing = FastOutSlowInEasing))
     ) {
         Box(
             Modifier

@@ -44,6 +44,44 @@ import io.github.skydynamic.maiproberplus.core.prober.rival.RivalSyncUtil
 fun RivalSettingCompose(onBack: () -> Unit) {
     val rival = application.configManager.config.rivalSyncConfig
 
+    // 输入框镜像 state：OutlinedTextField 的 value 必须是 Compose 可观察的 state，
+    // 直接读 rival.xxx（外部对象字段）重组时无变化被观察到，输入框不响应。
+    // 用 mutableStateOf 镜像每个字段，onValueChange 里先写 state 再写 config + save。
+    var keychip by remember { mutableStateOf(rival.keychip) }
+    var gameName by remember { mutableStateOf(rival.gameName) }
+    var gameServerUrl by remember { mutableStateOf(rival.gameServerUrl) }
+    var authServerUrl by remember { mutableStateOf(rival.authServerUrl) }
+    var userId by remember { mutableStateOf(rival.userId) }
+    var cryptVersion by remember { mutableStateOf(rival.cryptVersion) }
+    var cryptKey by remember { mutableStateOf(rival.cryptKey) }
+    var cryptIv by remember { mutableStateOf(rival.cryptIv) }
+    var cryptEncoding by remember { mutableStateOf(rival.cryptEncoding) }
+    var cryptObfuscate by remember { mutableStateOf(rival.cryptObfuscate) }
+    var authSalt by remember { mutableStateOf(rival.authSalt) }
+    var aesKey by remember { mutableStateOf(rival.aesKey) }
+    var aesIv by remember { mutableStateOf(rival.aesIv) }
+    var obfuscateParam by remember { mutableStateOf(rival.obfuscateParam) }
+
+    fun commit(field: String, value: String) {
+        when (field) {
+            "keychip" -> rival.keychip = value
+            "gameName" -> rival.gameName = value
+            "gameServerUrl" -> rival.gameServerUrl = value
+            "authServerUrl" -> rival.authServerUrl = value
+            "userId" -> rival.userId = value
+            "cryptVersion" -> rival.cryptVersion = value
+            "cryptKey" -> rival.cryptKey = value
+            "cryptIv" -> rival.cryptIv = value
+            "cryptEncoding" -> rival.cryptEncoding = value
+            "cryptObfuscate" -> rival.cryptObfuscate = value
+            "authSalt" -> rival.authSalt = value
+            "aesKey" -> rival.aesKey = value
+            "aesIv" -> rival.aesIv = value
+            "obfuscateParam" -> rival.obfuscateParam = value
+        }
+        application.configManager.save()
+    }
+
     var qrCodeInput by remember { mutableStateOf("") }
     var qrAuthing by remember { mutableStateOf(false) }
 
@@ -78,36 +116,36 @@ fun RivalSettingCompose(onBack: () -> Unit) {
             )
 
             OutlinedTextField(
-                value = rival.keychip,
-                onValueChange = { rival.keychip = it; application.configManager.save() },
+                value = keychip,
+                onValueChange = { keychip = it; commit("keychip", it) },
                 singleLine = true,
                 label = { Text("机台号", fontSize = 12.sp) },
                 modifier = Modifier.fillMaxWidth()
             )
             OutlinedTextField(
-                value = rival.gameName,
-                onValueChange = { rival.gameName = it; application.configManager.save() },
+                value = gameName,
+                onValueChange = { gameName = it; commit("gameName", it) },
                 singleLine = true,
                 label = { Text("游戏名称", fontSize = 12.sp) },
                 modifier = Modifier.fillMaxWidth()
             )
             OutlinedTextField(
-                value = rival.gameServerUrl,
-                onValueChange = { rival.gameServerUrl = it; application.configManager.save() },
+                value = gameServerUrl,
+                onValueChange = { gameServerUrl = it; commit("gameServerUrl", it) },
                 singleLine = true,
                 label = { Text("RivalApi 调用端口", fontSize = 12.sp) },
                 modifier = Modifier.fillMaxWidth()
             )
             OutlinedTextField(
-                value = rival.authServerUrl,
-                onValueChange = { rival.authServerUrl = it; application.configManager.save() },
+                value = authServerUrl,
+                onValueChange = { authServerUrl = it; commit("authServerUrl", it) },
                 singleLine = true,
                 label = { Text("Auth 鉴权节点", fontSize = 12.sp) },
                 modifier = Modifier.fillMaxWidth()
             )
             OutlinedTextField(
-                value = rival.userId,
-                onValueChange = { rival.userId = it; application.configManager.save() },
+                value = userId,
+                onValueChange = { userId = it; commit("userId", it) },
                 singleLine = true,
                 label = { Text("userId", fontSize = 12.sp) },
                 modifier = Modifier.fillMaxWidth()
@@ -127,7 +165,10 @@ fun RivalSettingCompose(onBack: () -> Unit) {
                     GlobalViewModel.viewModelScope.launch(Dispatchers.IO) {
                         try {
                             val ok = RivalSyncUtil.authByQr(qrCodeInput.trim())
-                            if (ok) qrCodeInput = ""
+                            if (ok) {
+                                qrCodeInput = ""
+                                userId = rival.userId
+                            }
                         } finally {
                             withContext(Dispatchers.Main) { qrAuthing = false }
                         }
@@ -140,64 +181,64 @@ fun RivalSettingCompose(onBack: () -> Unit) {
             }
 
             OutlinedTextField(
-                value = rival.cryptVersion,
-                onValueChange = { rival.cryptVersion = it; application.configManager.save() },
+                value = cryptVersion,
+                onValueChange = { cryptVersion = it; commit("cryptVersion", it) },
                 singleLine = true,
                 label = { Text("加密版本", fontSize = 12.sp) },
                 modifier = Modifier.fillMaxWidth()
             )
             OutlinedTextField(
-                value = rival.cryptKey,
-                onValueChange = { rival.cryptKey = it; application.configManager.save() },
+                value = cryptKey,
+                onValueChange = { cryptKey = it; commit("cryptKey", it) },
                 singleLine = true,
                 label = { Text("加密 Key", fontSize = 12.sp) },
                 modifier = Modifier.fillMaxWidth()
             )
             OutlinedTextField(
-                value = rival.cryptIv,
-                onValueChange = { rival.cryptIv = it; application.configManager.save() },
+                value = cryptIv,
+                onValueChange = { cryptIv = it; commit("cryptIv", it) },
                 singleLine = true,
                 label = { Text("加密 IV", fontSize = 12.sp) },
                 modifier = Modifier.fillMaxWidth()
             )
             OutlinedTextField(
-                value = rival.cryptEncoding,
-                onValueChange = { rival.cryptEncoding = it; application.configManager.save() },
+                value = cryptEncoding,
+                onValueChange = { cryptEncoding = it; commit("cryptEncoding", it) },
                 singleLine = true,
                 label = { Text("编码版本", fontSize = 12.sp) },
                 modifier = Modifier.fillMaxWidth()
             )
             OutlinedTextField(
-                value = rival.cryptObfuscate,
-                onValueChange = { rival.cryptObfuscate = it; application.configManager.save() },
+                value = cryptObfuscate,
+                onValueChange = { cryptObfuscate = it; commit("cryptObfuscate", it) },
                 singleLine = true,
                 label = { Text("混淆参数", fontSize = 12.sp) },
                 modifier = Modifier.fillMaxWidth()
             )
             OutlinedTextField(
-                value = rival.authSalt,
-                onValueChange = { rival.authSalt = it; application.configManager.save() },
+                value = authSalt,
+                onValueChange = { authSalt = it; commit("authSalt", it) },
                 singleLine = true,
                 label = { Text("Auth Salt", fontSize = 12.sp) },
                 modifier = Modifier.fillMaxWidth()
             )
             OutlinedTextField(
-                value = rival.aesKey,
-                onValueChange = { rival.aesKey = it; application.configManager.save() },
+                value = aesKey,
+                onValueChange = { aesKey = it; commit("aesKey", it) },
                 singleLine = true,
                 label = { Text("AES Key", fontSize = 12.sp) },
                 modifier = Modifier.fillMaxWidth()
             )
             OutlinedTextField(
-                value = rival.aesIv,
-                onValueChange = { rival.aesIv = it; application.configManager.save() },
+                value = aesIv,
+                onValueChange = { aesIv = it; commit("aesIv", it) },
                 singleLine = true,
                 label = { Text("AES IV", fontSize = 12.sp) },
                 modifier = Modifier.fillMaxWidth()
             )
             OutlinedTextField(
-                value = rival.obfuscateParam,
-                onValueChange = { rival.obfuscateParam = it; application.configManager.save() },
+                value = obfuscateParam,
+                onValueChange = { obfuscateParam = it; commit("obfuscateParam", it) },
                 singleLine = true,
                 label = { Text("Obfuscate Param", fontSize = 12.sp) },
                 modifier = Modifier.fillMaxWidth()
