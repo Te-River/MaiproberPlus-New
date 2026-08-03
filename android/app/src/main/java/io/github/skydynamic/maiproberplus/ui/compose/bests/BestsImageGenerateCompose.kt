@@ -237,11 +237,14 @@ fun ColumnScope.MaiContent(
                     }
                     ProberPlatform.LXNS -> {
                         // OAuth 模式下用 lxnsOAuthAccessToken（无需 lxnsToken）；
-                        // Token 模式沿用 lxnsToken。两者皆空才提示。
+                        // Token 模式沿用 lxnsToken。OAuth 未授权时提示去完成授权，不误导填 Token。
                         val lxnsToken = if (SyncViewModel.tokenInputMode == 1)
                             config.lxnsOAuthAccessToken else config.lxnsToken
                         if (lxnsToken.isEmpty()) {
-                            sendMessageToUi("请先设置落雪查分器Token")
+                            sendMessageToUi(
+                                if (SyncViewModel.tokenInputMode == 1)
+                                    "请先完成落雪授权" else "请先设置落雪查分器Token"
+                            )
                             BestsImageGenerateViewModel.canGenerate = true
                             return@launch
                         } else {
@@ -283,11 +286,14 @@ fun ColumnScope.ChuniContent(
                     }
                     ProberPlatform.LXNS -> {
                         // OAuth 模式下用 lxnsOAuthAccessToken（无需 lxnsToken）；
-                        // Token 模式沿用 lxnsToken。两者皆空才提示。
+                        // Token 模式沿用 lxnsToken。OAuth 未授权时提示去完成授权，不误导填 Token。
                         val lxnsToken = if (SyncViewModel.tokenInputMode == 1)
                             config.lxnsOAuthAccessToken else config.lxnsToken
                         if (lxnsToken.isEmpty()) {
-                            sendMessageToUi("请先设置落雪查分器Token")
+                            sendMessageToUi(
+                                if (SyncViewModel.tokenInputMode == 1)
+                                    "请先完成落雪授权" else "请先设置落雪查分器Token"
+                            )
                             BestsImageGenerateViewModel.canGenerate = true
                             return@launch
                         } else {
