@@ -146,12 +146,13 @@ object RivalSyncUtil {
             sendMessageToUi("未保存 userId，请先 QR 鉴权")
             return emptyList()
         }
-        if (cfg.gameServerUrl.isBlank() || cfg.cryptKey.isBlank() || cfg.cryptIv.isBlank()) {
-            sendMessageToUi("类型一配置缺失：gameServerUrl/cryptKey/cryptIv")
+        if (cfg.gameServerUrl.isBlank() || cfg.cryptKey.isBlank() || cfg.cryptIv.isBlank() || cfg.cryptObfuscate.isBlank()) {
+            sendMessageToUi("Rival 设置缺失必填项：RivalApi 调用端口/加密 Key/加密 IV/混淆参数")
             return emptyList()
         }
         val apiName = "GetUserRivalMusicApi"
         val apiHash = md5Hex("${apiName}MaimaiChn${cfg.cryptObfuscate}")
+        // gameServerUrl 直接拿来用不拼接（已是含尾斜杠的完整端口地址），host 仅作 Header 用
         val url = "${cfg.gameServerUrl}$apiHash"
         val host = cfg.gameServerUrl
             .removePrefix("https://").removePrefix("http://").substringBefore('/')

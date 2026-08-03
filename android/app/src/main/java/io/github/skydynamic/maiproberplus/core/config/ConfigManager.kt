@@ -90,29 +90,24 @@ data class ConfigStorage(
 
 /**
  * 类型一（Rival 同步）配置：对应 Mizuki 插件的 keychip + 游戏服务器 + 加密参数。
- * 全部字段留空，由用户在设置页自填，不内置。
+ * 全部字段留空，由用户在设置页"Rival 设置"大类自填，不内置。
  *
  * 字段说明（参考 Mizuki-plugin-Maimai-sync/plugins/maimai_sync）：
  *  - keychip：机台号（Mizuki keychip.csv 的 Keychip 列，作为 User-Agent 标识）
- *  - storeName：门店名（keychip.csv Store name 列，仅展示用）
- *  - province：省份名（keychip.csv Province 列，仅展示用）
- *  - storeId：门店 ID（keychip.csv Store ID 列）
- *  - provinceId：地区号（keychip.csv Province ID 列，鉴权用）
- *  - gameName：游戏名称（如 "maimai"），用于 URL 路由
- *  - gameServerUrl：游戏服务器网址（Mizuki config.py GAME_BASE_URL，如 "https://<game-server-url>"）
- *  - authServerUrl：鉴权网址（Mizuki AIME_DB_URL，如 "http://ai.sys-allnet.cn/wc_aime/api/get_data"）
- *  - cryptVersion：加密版本（Mizuki CRYPT_VERSIONS 的 key，如 "2026-1.55"）
- *  - cryptKey：加密 key（CRYPT_VERSIONS[ver].key）
- *  - cryptIv：加密 IV（CRYPT_VERSIONS[ver].iv）
- *  - cryptEncoding：编码版本（CRYPT_VERSIONS[ver].encoding，如 "1.55"）
- *  - cryptObfuscate：混淆参数（CRYPT_VERSIONS[ver].obfuscate，如 "<crypt-obfuscate>"）
- *  - authSalt / aesKey / aesIv / obfuscateParam：核心兼容层加密参数（Mizuki config.py）
+ *  - storeId：门店 ID
+ *  - provinceId：地区号
+ *  - gameName：游戏名称（如 "maimai"）
+ *  - gameServerUrl：RivalApi 调用端口，**直接拿来用不拼接**（如 "https://<game-server-url>"）
+ *  - authServerUrl：Auth 服务器的鉴权节点，**直接拿来用不拼接**（如 "http://ai.sys-allnet.cn/wc_aime/api/get_data"）。
+ *    **不强制**：仅在使用 QRcode 鉴权时要求填入；如果用户直接输入 userId 则不需要此字段。
+ *  - cryptVersion / cryptKey / cryptIv / cryptEncoding / cryptObfuscate：加密参数（Mizuki CRYPT_VERSIONS）
+ *  - authSalt / aesKey / aesIv / obfuscateParam：核心兼容层加密参数
+ *  - userId / token：QR 鉴权后本地保存。userId 在设置页可编辑、星号隐私显示；
+ *    直接填 userId 时跳过 QR 鉴权，authServerUrl 可不填。
  */
 @Serializable
 data class RivalSyncConfig(
     var keychip: String = "",
-    var storeName: String = "",
-    var province: String = "",
     var storeId: String = "",
     var provinceId: String = "",
     var gameName: String = "",
