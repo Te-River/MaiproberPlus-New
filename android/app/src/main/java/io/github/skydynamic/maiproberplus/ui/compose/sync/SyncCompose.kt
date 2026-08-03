@@ -507,7 +507,14 @@ fun SyncCompose() {
                     rivalSyncing = true
                     GlobalViewModel.viewModelScope.launch(Dispatchers.IO) {
                         try {
-                            RivalSyncUtil.uploadToProber()
+                            // 显式传 onProgress：切 Main 后直接 append pendingMessages 队列 + 触发弹窗，
+                            // 绕开 LiveData postValue 合并丢弃中间值导致后续提示不显
+                            RivalSyncUtil.uploadToProber { msg ->
+                                GlobalViewModel.viewModelScope.launch(Dispatchers.Main) {
+                                    GlobalViewModel.pendingMessages.add(msg)
+                                    GlobalViewModel.showMessageDialog = true
+                                }
+                            }
                         } finally {
                             withContext(Dispatchers.Main) { rivalSyncing = false }
                         }
