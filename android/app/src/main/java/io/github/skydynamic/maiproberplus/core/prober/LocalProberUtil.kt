@@ -6,6 +6,7 @@ import io.github.skydynamic.maiproberplus.GlobalViewModel
 import io.github.skydynamic.maiproberplus.core.data.chuni.ChuniScoreManager.writeChuniScoreCache
 import io.github.skydynamic.maiproberplus.core.data.maimai.MaimaiScoreManager.writeMaimaiScoreCache
 import io.github.skydynamic.maiproberplus.core.database.entity.MaimaiScoreEntity
+import io.github.skydynamic.maiproberplus.core.utils.DebugLog
 
 class LocalProberUtil : IProberUtil {
     override suspend fun uploadMaimaiProberData(
@@ -25,7 +26,7 @@ class LocalProberUtil : IProberUtil {
         writeMaimaiScoreCache(getMaimaiScoreData(authUrl))
 
         sendMessageToUi("缓存舞萌DX成绩到本地完成")
-        Log.d("LocalProberUtil", "缓存完成")
+        DebugLog.log("D", "LocalProberUtil", "缓存完成")
         GlobalViewModel.maimaiHooking = false
         application.sendNotification("本地查分器", "缓存完毕")
         return true
@@ -38,7 +39,7 @@ class LocalProberUtil : IProberUtil {
         writeChuniScoreCache(getChuniScoreData(authUrl))
 
         sendMessageToUi("缓存中二节奏成绩到本地完成")
-        Log.d("LocalProberUtil", "缓存完成")
+        DebugLog.log("D", "LocalProberUtil", "缓存完成")
         GlobalViewModel.chuniHooking = false
         application.sendNotification("本地查分器", "缓存完毕")
     }

@@ -11,6 +11,7 @@ import io.github.skydynamic.maiproberplus.core.data.maimai.MaimaiScoreManager.wr
 import io.github.skydynamic.maiproberplus.core.database.entity.ChuniScoreEntity
 import io.github.skydynamic.maiproberplus.core.database.entity.MaimaiScoreEntity
 import io.github.skydynamic.maiproberplus.core.utils.ParseScorePageUtil
+import io.github.skydynamic.maiproberplus.core.utils.DebugLog
 import io.github.skydynamic.maiproberplus.core.utils.WechatRequestUtil.WX_WINDOWS_UA
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.cio.CIO
@@ -54,7 +55,8 @@ val client = HttpClient(CIO) {
     expectSuccess = false
     HttpResponseValidator {
         handleResponseException { cause, _ ->
-            Log.e("ProberUtil", "请求失败: ${cause.message}")
+            DebugLog.log("E", "ProberUtil", "请求失败: ${cause.message}", cause)
+            DebugLog.log("E", "Network", "请求失败: ${cause.message}", cause)
         }
     }
 }
@@ -102,7 +104,7 @@ suspend fun fetchMaimaiScorePage(
     val homeBody = result.bodyAsText()
     if (homeBody.contains("错误")) {
         sendMessageToUi("获取舞萌成绩失败: 登录失败")
-        Log.e("ProberUtil", "登录失败, 抓取成绩停止")
+        DebugLog.log("E", "ProberUtil", "登录失败, 抓取成绩停止")
         return
     }
 
@@ -122,7 +124,7 @@ suspend fun fetchMaimaiScorePage(
             "https://maimai.wahlap.com/maimai-mobile/record/musicGenre/search/?genre=99&diff="
         }
 
-        Log.i("ProberUtil", "开始抓取${difficulty.diffName}成绩")
+        DebugLog.log("I", "ProberUtil", "开始抓取${difficulty.diffName}成绩")
         try {
             with(client) {
                 val scoreResp = get(
@@ -136,7 +138,7 @@ suspend fun fetchMaimaiScorePage(
                 processBody(difficulty, data ?: "")
             }
         } catch (e: Exception) {
-            Log.e("ProberUtil", "抓取${difficulty.diffName}成绩失败: ${e.message}")
+            DebugLog.log("E", "ProberUtil", "抓取${difficulty.diffName}成绩失败: ${e.message}", e)
         }
     }
 }
@@ -163,7 +165,7 @@ suspend fun fetchChuniScores(
     }
 
     if (result.bodyAsText().contains("错误")) {
-        Log.e("ProberUtil", "登录公众号失败")
+        DebugLog.log("E", "ProberUtil", "登录公众号失败")
         sendMessageToUi("获取中二节奏成绩失败: 登录公众号失败")
         return
     }
@@ -174,7 +176,7 @@ suspend fun fetchChuniScores(
         val difficulty = ChuniEnums.Difficulty.getDifficultyWithIndex(diff)
         val url = chuniUrls[diff]
 
-        Log.i("ProberUtil", "开始抓取${difficulty.diffName}成绩")
+        DebugLog.log("I", "ProberUtil", "开始抓取${difficulty.diffName}成绩")
 
         try {
             with(client) {
@@ -194,7 +196,7 @@ suspend fun fetchChuniScores(
                 processBody(difficulty, body)
             }
         } catch (e: Exception) {
-            Log.e("ProberUtil", "抓取${difficulty.diffName}成绩失败: ${e.message}")
+            DebugLog.log("E", "ProberUtil", "抓取${difficulty.diffName}成绩失败: ${e.message}", e)
         }
     }
 }

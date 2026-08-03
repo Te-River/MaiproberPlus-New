@@ -23,6 +23,7 @@ import io.github.skydynamic.maiproberplus.core.prober.models.lxns.LxnsMaimaiResp
 import io.github.skydynamic.maiproberplus.core.prober.models.lxns.LxnsMaimaiScoreBody
 import io.github.skydynamic.maiproberplus.core.prober.models.lxns.LxnsUserInfoResponse
 import io.github.skydynamic.maiproberplus.core.prober.lxns.LxnsOAuthUtil
+import io.github.skydynamic.maiproberplus.core.utils.DebugLog
 import io.github.skydynamic.maiproberplus.core.utils.ErrorLog
 import io.github.skydynamic.maiproberplus.ui.compose.sync.SyncViewModel
 import io.ktor.client.call.body
@@ -134,7 +135,7 @@ class LxnsProberUtil : IProberUtil {
         val ok = postScoreResponseBody.success
         if (ok) {
             sendMessageToUi("上传舞萌成绩到落雪查分器成功")
-            Log.d("LxnsProberUtil", "上传完毕")
+            DebugLog.log("D", "LxnsProberUtil", "上传完毕")
         } else {
             sendMessageToUi("舞萌成绩上传到落雪查分器失败: ${postScoreResponseBody.message}")
             ErrorLog.logError("LxnsProberUtil", "上传失败: ${postScoreResponseBody.message}")
@@ -192,7 +193,7 @@ class LxnsProberUtil : IProberUtil {
         val postScoreResponseBody = postResponse.body<LxnsChuniResponse>()
         if (postScoreResponseBody.success) {
             sendMessageToUi("上传中二节奏成绩到落雪查分器成功")
-            Log.d("LxnsProberUtil", "上传完毕")
+            DebugLog.log("D", "LxnsProberUtil", "上传完毕")
         } else {
             sendMessageToUi("上传中二成绩成绩到落雪查分器失败: ${postScoreResponseBody.message}")
             ErrorLog.logError("LxnsProberUtil", "上传失败: ${postScoreResponseBody.message}")
@@ -244,7 +245,7 @@ class LxnsProberUtil : IProberUtil {
             }
             return parseList
         } catch (e: Exception) {
-            Log.d("LxnsProberUtil", "获取舞萌成绩失败: $e", e)
+            DebugLog.log("D", "LxnsProberUtil", "获取舞萌成绩失败: $e", e)
             sendMessageToUi("获取舞萌成绩失败: ${e.message}")
             return emptyList()
         }
@@ -267,7 +268,7 @@ class LxnsProberUtil : IProberUtil {
             )
             return parseList
         } catch (e: Exception) {
-            Log.d("LxnsProberUtil", "获取中二成绩失败: $e", e)
+            DebugLog.log("D", "LxnsProberUtil", "获取中二成绩失败: $e", e)
             sendMessageToUi("获取中二成绩失败: ${e.message}")
             return emptyList()
         }
@@ -295,7 +296,7 @@ class LxnsProberUtil : IProberUtil {
             )
             return parseList
         } catch (e: Exception) {
-            Log.d("LxnsProberUtil", "获取中二成绩失败: $e", e)
+            DebugLog.log("D", "LxnsProberUtil", "获取中二成绩失败: $e", e)
             sendMessageToUi("获取中二成绩失败: ${e.message}")
             return emptyList()
         }
@@ -338,7 +339,7 @@ class LxnsProberUtil : IProberUtil {
             val body = response.body<LxnsGetSiteConfigResponse>()
             body.data.resourceVersion.maimai
         } catch (e: Exception) {
-            Log.d("LxnsProberUtil", "获取舞萌资源版本失败: $e", e)
+            DebugLog.log("D", "LxnsProberUtil", "获取舞萌资源版本失败: $e", e)
             sendMessageToUi("获取舞萌资源版本失败: ${e.message}")
             0
         }

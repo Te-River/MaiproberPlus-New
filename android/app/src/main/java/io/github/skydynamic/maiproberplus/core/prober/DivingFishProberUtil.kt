@@ -16,6 +16,7 @@ import io.github.skydynamic.maiproberplus.core.prober.models.divingfish.DivingFi
 import io.github.skydynamic.maiproberplus.core.prober.models.divingfish.DivingFishMaimaiScoreBody
 import io.github.skydynamic.maiproberplus.core.prober.models.divingfish.DivingFishPlayerProfile
 import io.github.skydynamic.maiproberplus.core.utils.ParseScorePageUtil
+import io.github.skydynamic.maiproberplus.core.utils.DebugLog
 import io.github.skydynamic.maiproberplus.core.utils.ErrorLog
 import io.ktor.client.call.body
 import kotlinx.serialization.json.Json
@@ -92,7 +93,7 @@ class DivingFishProberUtil : IProberUtil {
                     setBody(bodyStr)
                 }
                 ok = postResult.status.value in 200..299
-                Log.i("DivingFishProberUtil", "通过 Rival 同步已上传 ${externalScores.size} 条成绩到水鱼查分器, 接口信息: ${postResult.bodyAsText()}")
+                DebugLog.log("I", "DivingFishProberUtil", "通过 Rival 同步已上传 ${externalScores.size} 条成绩到水鱼查分器, 接口信息: ${postResult.bodyAsText()}")
                 sendMessageToUi("通过 Rival 同步已上传 ${externalScores.size} 条成绩到水鱼查分器")
             } catch (e: Exception) {
                 ErrorLog.logError("DivingFishProberUtil", "通过 Rival 同步上传水鱼失败", e)
@@ -109,7 +110,7 @@ class DivingFishProberUtil : IProberUtil {
         val scores = mutableListOf<MaimaiScoreEntity>()
         var allOk = true
         fetchMaimaiScorePage(authUrl) { diff, body ->
-            Log.i("DivingFishProberUtil", "正在上传${diff.diffName}成绩到水鱼查分器")
+            DebugLog.log("I", "DivingFishProberUtil", "正在上传${diff.diffName}成绩到水鱼查分器")
             try {
                 val result = client.post("$baseApiUrl/pageparser/page") {
                     headers {
@@ -161,13 +162,13 @@ class DivingFishProberUtil : IProberUtil {
                     contentType(ContentType.Application.Json)
                     setBody(result.bodyAsText())
                 }
-                Log.i("DivingFishProberUtil", "已上传${diff.diffName}成绩到水鱼查分器, 接口信息: ${postResult.bodyAsText()}")
+                DebugLog.log("I", "DivingFishProberUtil", "已上传${diff.diffName}成绩到水鱼查分器, 接口信息: ${postResult.bodyAsText()}")
             } catch (e: Exception) {
                 ErrorLog.logError("DivingFishProberUtil", "上传${diff.diffName}成绩到水鱼查分器失败", e)
             }
         }
         sendMessageToUi("上传舞萌DX成绩到水鱼查分器完成")
-        Log.d("DivingFishProberUtil", "上传完毕")
+        DebugLog.log("D", "DivingFishProberUtil", "上传完毕")
         GlobalViewModel.maimaiHooking = false
         application.sendNotification("水鱼查分器", "查分完毕")
         if (isCache) {
@@ -186,7 +187,7 @@ class DivingFishProberUtil : IProberUtil {
         application.sendNotification("水鱼查分器", "正在进行查分")
         sendMessageToUi("开始获取中二节奏数据并上传到水鱼查分器")
         fetchChuniScores(authUrl) { diff, body ->
-            Log.i("DivingFishProberUtil", "正在上传${diff.diffName}成绩到水鱼查分器")
+            DebugLog.log("I", "DivingFishProberUtil", "正在上传${diff.diffName}成绩到水鱼查分器")
             val recentParam = if (diff.diffName.lowercase().contains("recent")) "?recent=1" else ""
             try {
                 client.post("$baseApiUrl/chunithmprober/player/update_records_html$recentParam") {
@@ -202,13 +203,13 @@ class DivingFishProberUtil : IProberUtil {
                     scores.addAll(ParseScorePageUtil.parseChuni(body, diff))
                 }
 
-                Log.i("DivingFishProberUtil", "已上传${diff.diffName}成绩到水鱼查分器")
+                DebugLog.log("I", "DivingFishProberUtil", "已上传${diff.diffName}成绩到水鱼查分器")
             } catch (e: Exception) {
                 ErrorLog.logError("DivingFishProberUtil", "上传${diff.diffName}成绩到水鱼查分器失败", e)
             }
         }
         sendMessageToUi("上传中二节奏成绩到水鱼查分器完成")
-        Log.d("DivingFishProberUtil", "上传完毕")
+        DebugLog.log("D", "DivingFishProberUtil", "上传完毕")
         GlobalViewModel.chuniHooking = false
         application.sendNotification("水鱼查分器", "查分完毕")
         if (isCache) {

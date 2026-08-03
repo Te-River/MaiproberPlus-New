@@ -4,6 +4,7 @@ import android.util.Log
 import io.github.skydynamic.maiproberplus.Application.Companion.application
 import io.github.skydynamic.maiproberplus.BuildConfig
 import io.github.skydynamic.maiproberplus.core.prober.sendMessageToUi
+import io.github.skydynamic.maiproberplus.core.utils.DebugLog
 import io.ktor.client.call.body
 import io.ktor.client.request.header
 import io.ktor.client.request.headers
@@ -145,7 +146,7 @@ object LxnsOAuthUtil {
             if (resp.status.value != 200) {
                 val err = try { json.decodeFromString<TokenErrorResponse>(respText) } catch (_: Exception) { null }
                 val msg = err?.let { "${it.error}${it.error_description?.let { d -> ": $d" } ?: ""}" } ?: respText
-                Log.e(TAG, "$hint 失败: $msg")
+                DebugLog.log("E", TAG, "$hint 失败: $msg")
                 sendMessageToUi("${hint}失败: $msg")
                 // invalid_grant（授权码过期 / refresh_token 失效）时不主动清空本地令牌，
                 // 避免给用户压力；只在 API 实际报错时由调用方提示重新绑定。
@@ -159,11 +160,11 @@ object LxnsOAuthUtil {
                 cfg.lxnsOAuthAccessTokenExpireAt = System.currentTimeMillis() +
                     max(token.expires_in - REFRESH_BUFFER_SECONDS, 0L) * 1000
                 application.configManager.save()
-                Log.d(TAG, "$hint 成功，access_token 有效期 ${token.expires_in}s")
+                DebugLog.log("D", TAG, "$hint 成功，access_token 有效期 ${token.expires_in}s")
                 true
             }
         } catch (e: Exception) {
-            Log.e(TAG, "$hint 异常: ${e.message}", e)
+            DebugLog.log("E", TAG, "$hint 异常: ${e.message}", e)
             sendMessageToUi("${hint}异常: ${e.message}")
             false
         }
