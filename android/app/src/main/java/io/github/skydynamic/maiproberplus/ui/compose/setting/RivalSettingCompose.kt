@@ -48,36 +48,28 @@ fun RivalSettingCompose(onBack: () -> Unit) {
     // 直接读 rival.xxx（外部对象字段）重组时无变化被观察到，输入框不响应。
     // 用 mutableStateOf 镜像每个字段，onValueChange 里先写 state 再写 config + save。
     var keychip by remember { mutableStateOf(rival.keychip) }
-    var gameName by remember { mutableStateOf(rival.gameName) }
     var gameServerUrl by remember { mutableStateOf(rival.gameServerUrl) }
+    var apiHash by remember { mutableStateOf(rival.apiHash) }
     var authServerUrl by remember { mutableStateOf(rival.authServerUrl) }
     var userId by remember { mutableStateOf(rival.userId) }
-    var cryptVersion by remember { mutableStateOf(rival.cryptVersion) }
     var cryptKey by remember { mutableStateOf(rival.cryptKey) }
     var cryptIv by remember { mutableStateOf(rival.cryptIv) }
     var cryptEncoding by remember { mutableStateOf(rival.cryptEncoding) }
     var cryptObfuscate by remember { mutableStateOf(rival.cryptObfuscate) }
     var authSalt by remember { mutableStateOf(rival.authSalt) }
-    var aesKey by remember { mutableStateOf(rival.aesKey) }
-    var aesIv by remember { mutableStateOf(rival.aesIv) }
-    var obfuscateParam by remember { mutableStateOf(rival.obfuscateParam) }
 
     fun commit(field: String, value: String) {
         when (field) {
             "keychip" -> rival.keychip = value
-            "gameName" -> rival.gameName = value
             "gameServerUrl" -> rival.gameServerUrl = value
+            "apiHash" -> rival.apiHash = value
             "authServerUrl" -> rival.authServerUrl = value
             "userId" -> rival.userId = value
-            "cryptVersion" -> rival.cryptVersion = value
             "cryptKey" -> rival.cryptKey = value
             "cryptIv" -> rival.cryptIv = value
             "cryptEncoding" -> rival.cryptEncoding = value
             "cryptObfuscate" -> rival.cryptObfuscate = value
             "authSalt" -> rival.authSalt = value
-            "aesKey" -> rival.aesKey = value
-            "aesIv" -> rival.aesIv = value
-            "obfuscateParam" -> rival.obfuscateParam = value
         }
         application.configManager.save()
     }
@@ -123,17 +115,17 @@ fun RivalSettingCompose(onBack: () -> Unit) {
                 modifier = Modifier.fillMaxWidth()
             )
             OutlinedTextField(
-                value = gameName,
-                onValueChange = { gameName = it; commit("gameName", it) },
-                singleLine = true,
-                label = { Text("游戏名称", fontSize = 12.sp) },
-                modifier = Modifier.fillMaxWidth()
-            )
-            OutlinedTextField(
                 value = gameServerUrl,
                 onValueChange = { gameServerUrl = it; commit("gameServerUrl", it) },
                 singleLine = true,
-                label = { Text("RivalApi 调用端口", fontSize = 12.sp) },
+                label = { Text("游戏服务器网址 (含尾斜杠)", fontSize = 12.sp) },
+                modifier = Modifier.fillMaxWidth()
+            )
+            OutlinedTextField(
+                value = apiHash,
+                onValueChange = { apiHash = it; commit("apiHash", it) },
+                singleLine = true,
+                label = { Text("哈希", fontSize = 12.sp) },
                 modifier = Modifier.fillMaxWidth()
             )
             OutlinedTextField(
@@ -181,13 +173,6 @@ fun RivalSettingCompose(onBack: () -> Unit) {
             }
 
             OutlinedTextField(
-                value = cryptVersion,
-                onValueChange = { cryptVersion = it; commit("cryptVersion", it) },
-                singleLine = true,
-                label = { Text("加密版本", fontSize = 12.sp) },
-                modifier = Modifier.fillMaxWidth()
-            )
-            OutlinedTextField(
                 value = cryptKey,
                 onValueChange = { cryptKey = it; commit("cryptKey", it) },
                 singleLine = true,
@@ -220,27 +205,6 @@ fun RivalSettingCompose(onBack: () -> Unit) {
                 onValueChange = { authSalt = it; commit("authSalt", it) },
                 singleLine = true,
                 label = { Text("Auth Salt", fontSize = 12.sp) },
-                modifier = Modifier.fillMaxWidth()
-            )
-            OutlinedTextField(
-                value = aesKey,
-                onValueChange = { aesKey = it; commit("aesKey", it) },
-                singleLine = true,
-                label = { Text("AES Key", fontSize = 12.sp) },
-                modifier = Modifier.fillMaxWidth()
-            )
-            OutlinedTextField(
-                value = aesIv,
-                onValueChange = { aesIv = it; commit("aesIv", it) },
-                singleLine = true,
-                label = { Text("AES IV", fontSize = 12.sp) },
-                modifier = Modifier.fillMaxWidth()
-            )
-            OutlinedTextField(
-                value = obfuscateParam,
-                onValueChange = { obfuscateParam = it; commit("obfuscateParam", it) },
-                singleLine = true,
-                label = { Text("Obfuscate Param", fontSize = 12.sp) },
                 modifier = Modifier.fillMaxWidth()
             )
         }

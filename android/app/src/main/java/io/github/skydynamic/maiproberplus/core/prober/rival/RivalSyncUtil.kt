@@ -146,14 +146,12 @@ object RivalSyncUtil {
             sendMessageToUi("未保存 userId，请先 QR 鉴权")
             return emptyList()
         }
-        if (cfg.gameServerUrl.isBlank() || cfg.cryptKey.isBlank() || cfg.cryptIv.isBlank() || cfg.cryptObfuscate.isBlank()) {
-            sendMessageToUi("Rival 设置缺失必填项：RivalApi 调用端口/加密 Key/加密 IV/混淆参数")
+        if (cfg.gameServerUrl.isBlank() || cfg.apiHash.isBlank() || cfg.cryptKey.isBlank() || cfg.cryptIv.isBlank()) {
+            sendMessageToUi("Rival 设置缺失必填项：游戏服务器网址/哈希/加密 Key/加密 IV")
             return emptyList()
         }
-        val apiName = "GetUserRivalMusicApi"
-        val apiHash = md5Hex("${apiName}MaimaiChn${cfg.cryptObfuscate}")
-        // gameServerUrl 直接拿来用不拼接（已是含尾斜杠的完整端口地址），host 仅作 Header 用
-        val url = "${cfg.gameServerUrl}$apiHash"
+        // gameServerUrl（含尾斜杠）+ apiHash 拼成完整请求 URL；host 仅作 Header 用
+        val url = "${cfg.gameServerUrl}${cfg.apiHash}"
         val host = cfg.gameServerUrl
             .removePrefix("https://").removePrefix("http://").substringBefore('/')
 
@@ -174,7 +172,7 @@ object RivalSyncUtil {
                     header(HttpHeaders.ContentEncoding, "deflate")
                     header("Mai-Encoding", cfg.cryptEncoding)
                     header(HttpHeaders.Host, host)
-                    header(HttpHeaders.UserAgent, "$apiHash#${cfg.keychip}")
+                    header(HttpHeaders.UserAgent, "${cfg.apiHash}#${cfg.keychip}")
                     setBody(encrypt(mapToJson(data), cfg))
                 }
             } catch (e: Exception) {

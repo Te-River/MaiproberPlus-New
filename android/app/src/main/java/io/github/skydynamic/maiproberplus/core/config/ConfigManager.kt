@@ -90,34 +90,33 @@ data class ConfigStorage(
 
 /**
  * 类型一（Rival 同步）配置：对应 Mizuki 插件的 keychip + 游戏服务器 + 加密参数。
- * 全部字段留空，由用户在设置页"Rival 设置"大类自填，不内置。
+ * 全部字段留空，由用户在设置页"Rival 设置"二级菜单自填，不内置。
  *
  * 字段说明（参考 Mizuki-plugin-Maimai-sync/plugins/maimai_sync）：
  *  - keychip：机台号（Mizuki keychip.csv 的 Keychip 列，作为 User-Agent 标识）
- *  - gameName：游戏名称（如 "maimai"）
- *  - gameServerUrl：RivalApi 调用端口，**直接拿来用不拼接**（如 "https://<game-server-url>"）
+ *  - gameServerUrl：游戏服务器基础网址，含尾斜杠（如 "https://<game-server-url>"）
+ *  - apiHash：api 端点哈希值，由 md5("GetUserRivalMusicApiMaimaiChn" + cryptObfuscate) 算出；
+ *    和 gameServerUrl 分开填，拼接成完整请求 URL。
  *  - authServerUrl：Auth 服务器的鉴权节点，**直接拿来用不拼接**（如 "http://ai.sys-allnet.cn/wc_aime/api/get_data"）。
  *    **不强制**：仅在使用 QRcode 鉴权时要求填入；如果用户直接输入 userId 则不需要此字段。
- *  - cryptVersion / cryptKey / cryptIv / cryptEncoding / cryptObfuscate：加密参数（Mizuki CRYPT_VERSIONS）
- *  - authSalt / aesKey / aesIv / obfuscateParam：核心兼容层加密参数
+ *  - cryptKey / cryptIv：AES-CBC 加密的 key/iv（Mizuki CRYPT_VERSIONS[ver].key/iv）
+ *  - cryptEncoding：编码版本（Mizuki CRYPT_VERSIONS[ver].encoding，作 Mai-Encoding header）
+ *  - cryptObfuscate：混淆参数（Mizuki CRYPT_VERSIONS[ver].obfuscate，作 User-Agent 拼接）
+ *  - authSalt：鉴权签名盐（Mizuki config.py AUTH_SALT）
  *  - userId / token：QR 鉴权后本地保存。userId 在设置页可编辑、星号隐私显示；
- *    直接填 userId 时跳过 QR 鉴权，authServerUrl 可不填。
+ *    直接填 userId 时跳过 QR 鉴权，authServerUrl/authSalt 可不填。
  */
 @Serializable
 data class RivalSyncConfig(
     var keychip: String = "",
-    var gameName: String = "",
     var gameServerUrl: String = "",
+    var apiHash: String = "",
     var authServerUrl: String = "",
-    var cryptVersion: String = "",
     var cryptKey: String = "",
     var cryptIv: String = "",
     var cryptEncoding: String = "",
     var cryptObfuscate: String = "",
     var authSalt: String = "",
-    var aesKey: String = "",
-    var aesIv: String = "",
-    var obfuscateParam: String = "",
     // QR 鉴权后本地保存的 userId/token。userId 在设置页可编辑、星号隐私显示。
     // token 一般短期失效，留作缓存；过期重新 QR 鉴权刷新即可。
     var userId: String = "",

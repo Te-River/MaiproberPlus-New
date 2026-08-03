@@ -495,8 +495,8 @@ fun SyncCompose() {
                         return@Button
                     }
                     val cfg = application.configManager.config.rivalSyncConfig
-                    if (cfg.userId.isBlank() || cfg.token.isBlank()) {
-                        sendMessageToUi("请先在设置页完成类型一 QR 鉴权，或填入 userId")
+                    if (cfg.userId.isBlank()) {
+                        sendMessageToUi("请先在设置页 Rival 设置里填入 userId，或用 QR 二维码鉴权拿 userId")
                         return@Button
                     }
                     GlobalViewModel.viewModelScope.launch(Dispatchers.IO) {
@@ -504,6 +504,8 @@ fun SyncCompose() {
                         if (scores.isNotEmpty()) {
                             writeMaimaiScoreCache(scores)
                             sendMessageToUi("通过 Rivral 同步完成，共 ${scores.size} 条")
+                        } else {
+                            sendMessageToUi("通过 Rivral 同步失败：未拉到成绩，请检查 Rival 设置")
                         }
                     }
                 }
