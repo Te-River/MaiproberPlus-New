@@ -106,11 +106,12 @@ object RivalSyncUtil {
             ProberPlatform.DIVING_FISH -> config.divingfishToken
             ProberPlatform.LOCAL -> ""
         }
-        platform.factory.uploadMaimaiProberData(
+        val ok = platform.factory.uploadMaimaiProberData(
             importToken = importToken,
             authUrl = "",
             externalScores = scores
         )
+        sendMessageToUi(if (ok) "成绩同步成功" else "成绩同步失败")
     }
 
     /** QR 鉴权：POST authServerUrl，拿 userId/token 存本地。返回是否成功。 */

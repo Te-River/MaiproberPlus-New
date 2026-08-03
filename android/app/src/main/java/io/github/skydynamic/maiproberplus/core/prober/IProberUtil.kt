@@ -11,12 +11,15 @@ interface IProberUtil {
      * @param authUrl VPN 抓包的查分页面 URL（externalScores 为空时用它拉成绩）
      * @param externalScores 可选：外部已拉好的成绩（如 Rival 同步拉的对手成绩）。
      *        非空时跳过 VPN 抓包，直接上传这批成绩。
+     * @return true 上传成功，false 失败（具体错因已通过 sendMessageToUi 发出）
      */
     suspend fun uploadMaimaiProberData(
         importToken: String,
         authUrl: String,
         externalScores: List<MaimaiScoreEntity>? = null
-    ) {}
+    ): Boolean {
+        return false
+    }
     suspend fun uploadChunithmProberData(importToken: String, authUrl: String) {}
     suspend fun getMaimaiProberData(importToken: String): List<MaimaiScoreEntity> {
         return emptyList()

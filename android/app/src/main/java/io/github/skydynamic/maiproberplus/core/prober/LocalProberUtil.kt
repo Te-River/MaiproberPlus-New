@@ -12,14 +12,14 @@ class LocalProberUtil : IProberUtil {
         importToken: String,
         authUrl: String,
         externalScores: List<MaimaiScoreEntity>?
-    ) {
+    ): Boolean {
         application.sendNotification("本地查分器", "正在进行查分")
         sendMessageToUi("开始获取舞萌DX成绩并缓存到本地")
         if (externalScores != null) {
             writeMaimaiScoreCache(externalScores)
             sendMessageToUi("已缓存 ${externalScores.size} 条舞萌DX成绩到本地")
             application.sendNotification("本地查分器", "缓存完毕")
-            return
+            return true
         }
 
         writeMaimaiScoreCache(getMaimaiScoreData(authUrl))
@@ -28,6 +28,7 @@ class LocalProberUtil : IProberUtil {
         Log.d("LocalProberUtil", "缓存完成")
         GlobalViewModel.maimaiHooking = false
         application.sendNotification("本地查分器", "缓存完毕")
+        return true
     }
 
     override suspend fun uploadChunithmProberData(importToken: String, authUrl: String) {

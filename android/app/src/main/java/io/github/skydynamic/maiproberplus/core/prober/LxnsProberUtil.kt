@@ -84,7 +84,7 @@ class LxnsProberUtil : IProberUtil {
         importToken: String,
         authUrl: String,
         externalScores: List<MaimaiScoreEntity>?
-    ) {
+    ): Boolean {
         val isCache = application.configManager.config.localConfig.cacheScore
 
         application.sendNotification("落雪查分器", "舞萌数据上传中")
@@ -93,7 +93,7 @@ class LxnsProberUtil : IProberUtil {
 
         if (scores.isEmpty()) {
             sendMessageToUi("通过 Rival 同步失败：未拉到成绩，请检查 Rival 设置")
-            return
+            return false
         }
 
         val postScores = scores.map {
@@ -114,7 +114,7 @@ class LxnsProberUtil : IProberUtil {
         val postResponse = try {
             val auth = resolveAuthHeader(importToken) ?: run {
                 sendMessageToUi("落雪授权已失效，请重新授权")
-                return
+                return false
             }
             client.post("$baseApiUrl/api/v0/user/maimai/player/scores") {
                 setBody(body)
@@ -126,11 +126,12 @@ class LxnsProberUtil : IProberUtil {
         } catch (e: Exception) {
             Log.e("LxnsProberUtil", "上传失败: $e")
             sendMessageToUi("上传失败: $e")
-            return
+            return false
         }
 
         val postScoreResponseBody = postResponse.body<LxnsMaimaiResponse>()
-        if (postScoreResponseBody.success) {
+        val ok = postScoreResponseBody.success
+        if (ok) {
             sendMessageToUi("上传舞萌成绩到落雪查分器成功")
             Log.d("LxnsProberUtil", "上传完毕")
         } else {
@@ -142,6 +143,7 @@ class LxnsProberUtil : IProberUtil {
         if (isCache) {
             writeMaimaiScoreCache(scores)
         }
+        return ok
     }
 
     override suspend fun uploadChunithmProberData(importToken: String, authUrl: String) {

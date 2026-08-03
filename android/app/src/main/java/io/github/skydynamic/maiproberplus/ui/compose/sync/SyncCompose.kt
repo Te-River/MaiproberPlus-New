@@ -26,6 +26,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material3.Button
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -49,6 +50,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import io.github.skydynamic.maiproberplus.Application.Companion.application
 import io.github.skydynamic.maiproberplus.GlobalViewModel
 import io.github.skydynamic.maiproberplus.core.data.GameType
@@ -80,6 +82,7 @@ fun SyncCompose() {
 
     var openAskIsOverwriteScoresDialog by remember { mutableStateOf(false) }
     var openAskOverwriteUserInfo by remember { mutableStateOf(false) }
+    var rivalSyncing by remember { mutableStateOf(false) }
 
     val vpnRequestLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.StartActivityForResult()
@@ -487,6 +490,7 @@ fun SyncCompose() {
                 modifier = Modifier
                     .padding(15.dp)
                     .size(300.dp, 50.dp),
+                enabled = !rivalSyncing,
                 onClick = {
                     // 通过 Rival 同步：类型一流程，拉对手成绩后上传到当前选定查分器（落雪 OAuth / 氵鱼 Token）。
                     // 类型一仅对舞萌 DX 生效，中二节奏无 Rival API。
@@ -499,12 +503,24 @@ fun SyncCompose() {
                         sendMessageToUi("请先在设置页 Rival 设置里填入 userId，或用 QR 二维码鉴权拿 userId")
                         return@Button
                     }
+                    rivalSyncing = true
                     GlobalViewModel.viewModelScope.launch(Dispatchers.IO) {
-                        RivalSyncUtil.uploadToProber()
+                        try {
+                            RivalSyncUtil.uploadToProber()
+                        } finally {
+                            withContext(Dispatchers.Main) { rivalSyncing = false }
+                        }
                     }
                 }
             ) {
-                Text("通过 Rivral 同步")
+                if (rivalSyncing) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(24.dp),
+                        strokeWidth = 2.dp
+                    )
+                } else {
+                    Text("通过 Rivral 同步")
+                }
             }
 
             Button(
