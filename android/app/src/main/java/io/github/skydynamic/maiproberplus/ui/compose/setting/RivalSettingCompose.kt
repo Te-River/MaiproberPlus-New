@@ -59,17 +59,20 @@ fun RivalSettingCompose(onBack: () -> Unit) {
     var authSalt by remember { mutableStateOf(rival.authSalt) }
 
     fun commit(field: String, value: String) {
+        // 统一 trim 防用户输入首尾空格（如 gameServerUrl 尾随空格会导致
+        // 拼接 URL 含 %20，服务器路径不匹配返回 200 空体）
+        val trimmed = value.trim()
         when (field) {
-            "keychip" -> rival.keychip = value
-            "gameServerUrl" -> rival.gameServerUrl = value
-            "apiHash" -> rival.apiHash = value
-            "authServerUrl" -> rival.authServerUrl = value
-            "userId" -> rival.userId = value
-            "cryptKey" -> rival.cryptKey = value
-            "cryptIv" -> rival.cryptIv = value
-            "cryptEncoding" -> rival.cryptEncoding = value
-            "cryptObfuscate" -> rival.cryptObfuscate = value
-            "authSalt" -> rival.authSalt = value
+            "keychip" -> rival.keychip = trimmed
+            "gameServerUrl" -> rival.gameServerUrl = trimmed
+            "apiHash" -> rival.apiHash = trimmed
+            "authServerUrl" -> rival.authServerUrl = trimmed
+            "userId" -> rival.userId = trimmed
+            "cryptKey" -> rival.cryptKey = trimmed
+            "cryptIv" -> rival.cryptIv = trimmed
+            "cryptEncoding" -> rival.cryptEncoding = trimmed
+            "cryptObfuscate" -> rival.cryptObfuscate = trimmed
+            "authSalt" -> rival.authSalt = trimmed
         }
         application.configManager.save()
     }

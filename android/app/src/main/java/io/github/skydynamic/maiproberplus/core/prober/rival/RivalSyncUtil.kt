@@ -215,9 +215,10 @@ object RivalSyncUtil {
         }
         // gameServerUrl（含尾斜杠）+ cryptObfuscate + "/" + apiHash 拼成完整请求 URL；
         // 对齐 Mizuki lib_game._call_api 实际端点结构（Maimai2Servlet/<obfuscate>/<apiHash>）。
+        // 三项都 trim，防用户填 gameServerUrl 尾随空格致 URL 含 %20 服务器返回 200 空体。
         // host 仅作 Header 用
-        val url = "${cfg.gameServerUrl}${cfg.cryptObfuscate}/${cfg.apiHash}"
-        val host = cfg.gameServerUrl
+        val url = "${cfg.gameServerUrl.trim()}${cfg.cryptObfuscate.trim()}/${cfg.apiHash.trim()}"
+        val host = cfg.gameServerUrl.trim()
             .removePrefix("https://").removePrefix("http://").substringBefore('/')
 
         val all = mutableListOf<MaimaiScoreEntity>()
@@ -236,6 +237,10 @@ object RivalSyncUtil {
                     contentType(ContentType.Application.Json)
                     header(HttpHeaders.ContentEncoding, "deflate")
                     header("Mai-Encoding", cfg.cryptEncoding)
+                    // 对齐 Mizuki lib_game._call_api headers：Accept-Encoding 显式空（要未压缩响应）
+                    // + Charset UTF-8，缺这两个服务器可能返回 200 空体
+                    header(HttpHeaders.AcceptEncoding, "")
+                    header("Charset", "UTF-8")
                     header(HttpHeaders.Host, host)
                     header(HttpHeaders.UserAgent, "${cfg.apiHash}#${cfg.keychip}")
                     setBody(encrypt(mapToJson(data), cfg))
