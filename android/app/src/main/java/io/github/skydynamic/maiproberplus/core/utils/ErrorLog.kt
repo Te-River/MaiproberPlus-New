@@ -94,7 +94,8 @@ object ErrorLog {
     private fun writeEntry(entry: String, file: File) {
         synchronized(this) {
             try {
-                // 超限回滚：保留尾部一半重写，避免无限膨胀
+                // application 未初始化（早于 onCreate / 静态初始化期）时降级跳过文件写，
+                // logcat 仍记录——避免 filesDir 访问崩把 app 搞崩
                 if (file.length() > MAX_FILE_BYTES) {
                     val bytes = file.readBytes()
                     val keep = bytes.copyOfRange((bytes.size / 2), bytes.size)
@@ -102,7 +103,7 @@ object ErrorLog {
                 }
                 file.appendText(entry)
             } catch (_: Throwable) {
-                // 写文件失败（存储满/权限）静默跳过，logcat 仍记录
+                // 写文件失败（存储满/权限/application 未初始化）静默跳过，logcat 仍记录
             }
         }
     }

@@ -87,7 +87,9 @@ object DebugLog {
     private fun writeEntry(entry: String) {
         synchronized(lock) {
             try {
-                val file = logFile()
+                // application 未初始化（早于 onCreate / 静态初始化期）时降级跳过文件写，
+                // logcat 仍记录——避免 filesDir 访问崩把 app 搞崩
+                val file = try { logFile() } catch (_: Throwable) { return }
                 if (file.length() > MAX_FILE_BYTES) {
                     val bytes = file.readBytes()
                     val keep = bytes.copyOfRange((bytes.size / 2), bytes.size)
