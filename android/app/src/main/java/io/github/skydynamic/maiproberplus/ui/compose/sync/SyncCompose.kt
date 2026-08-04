@@ -8,6 +8,8 @@ import android.net.VpnService
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.tween
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -487,18 +489,20 @@ fun SyncCompose() {
             modifier,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
+            // Rival 同步仅支持舞萌 DX：切到中二节奏时隐藏按钮（Material Motion 过渡）
+            AnimatedVisibility(
+                visible = globalViewModel.gameType == GameType.MaimaiDX,
+                enter = expandVertically(tween(300, easing = FastOutSlowInEasing)) + fadeIn(tween(300)),
+                exit = shrinkVertically(tween(300, easing = FastOutSlowInEasing)) + fadeOut(tween(300))
+            ) {
             Button(
                 modifier = Modifier
                     .padding(15.dp)
                     .size(300.dp, 50.dp),
                 enabled = !rivalSyncing,
                 onClick = {
-                    // 通过 Rival 同步：类型一流程，拉对手成绩后上传到当前选定查分器（落雪 OAuth / 氵鱼 Token）。
-                    // 类型一仅对舞萌 DX 生效，中二节奏无 Rival API。
-                    if (globalViewModel.gameType != GameType.MaimaiDX) {
-                        sendMessageToUi("通过 Rival 同步仅支持舞萌 DX")
-                        return@Button
-                    }
+                    // 通过 Rival 同步：类型一流程，拉对手成绩后上传到当前选定查分器（落雪 OAuth / 水鱼 Token）。
+                    // 类型一仅对舞萌 DX 生效，中二节奏无 Rival API（按钮已按 gameType 隐藏）。
                     val cfg = application.configManager.config.rivalSyncConfig
                     if (cfg.userId.isBlank()) {
                         sendMessageToUi("请先在设置页 Rival 设置里填入 userId，或用 QR 二维码鉴权拿 userId")
@@ -530,6 +534,7 @@ fun SyncCompose() {
                 } else {
                     Text("通过 Rivral 同步")
                 }
+            }
             }
 
             Button(
