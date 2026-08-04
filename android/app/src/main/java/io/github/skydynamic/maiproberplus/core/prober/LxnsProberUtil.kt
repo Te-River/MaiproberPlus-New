@@ -99,18 +99,31 @@ class LxnsProberUtil : IProberUtil {
         }
 
         val postScores = scores.map {
+            // 对齐 Mizuki lib_lxns._transform_for_lxns：按 musicId 大小三级映射，
+            // 不要用本地曲库推 type（DX 谱面 id=base+10000 会被误判成 standard）
+            val lxnsId: Int
+            val typeStr: String
+            val levelIdx: Int
+            when {
+                it.songId >= 100000 -> {  // 宴会场：id 原样，type=utage，level 固定 0
+                    lxnsId = it.songId; typeStr = "utage"; levelIdx = 0
+                }
+                it.songId >= 10000 -> {   // DX 谱面：id 对 10000 取余，type=dx
+                    lxnsId = it.songId % 10000; typeStr = "dx"; levelIdx = it.diff.diffIndex
+                }
+                else -> {                  // 标准谱面：id 原样，type=standard
+                    lxnsId = it.songId; typeStr = "standard"; levelIdx = it.diff.diffIndex
+                }
+            }
             LxnsMaimaiScoreBody(
-                // 直接用 entity 的 songId（Rival 拉取的 musicId / VPN 抓包解析的 res.id），
-                // 落雪 API 文档确认 id 就是曲目 musicId，不用 title 反查（反查本地曲库
-                // 没有的曲子返回 -1 会被落雪拒收 invalid song id）
-                id = it.songId,
-                levelIndex = it.diff.diffIndex,
+                id = lxnsId,
+                levelIndex = levelIdx,
                 // 对齐 Mizuki _transform_for_lxns：原值 /10000 转浮点
                 achievements = it.achievement / 10000.0f,
                 fc = it.fullComboType.typeName,
                 fs = it.syncType.syncName,
                 dxScore = it.dxScore,
-                type = it.type.type
+                type = typeStr
             )
         }
 

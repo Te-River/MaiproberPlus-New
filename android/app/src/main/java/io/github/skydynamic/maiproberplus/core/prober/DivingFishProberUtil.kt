@@ -63,10 +63,13 @@ class DivingFishProberUtil : IProberUtil {
                 return false
             }
             val payload = externalScores.map {
+                // 对齐 Mizuki lib_fish._transform_for_fish：type 按 musicId 大小判定，
+                // DX 谱面（10000<=mid<100000）type=DX 且 song_id 取余；宴会场（>=100000）
+                // 水鱼无 utage 归为 SD；标准谱面原样
+                val fishType = if (it.songId in 10000 until 100000) "DX" else "SD"
+                val fishSongId = if (it.songId in 10000 until 100000) it.songId % 10000 else it.songId
                 DivingFishMaimaiScoreBody(
-                    // 直接用 entity 的 songId（Rival 拉取的 musicId），不用 title 反查，
-                    // 对齐 Mizuki lib_fish._transform_for_fish 直接用 musicId
-                    songId = it.songId,
+                    songId = fishSongId,
                     title = it.title,
                     level = it.level.toString(),
                     levelIndex = it.diff.diffIndex,
