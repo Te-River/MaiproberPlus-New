@@ -3,6 +3,14 @@ package io.github.skydynamic.maiproberplus.ui.compose.setting
 import android.content.Intent
 import android.net.Uri
 import android.os.Environment
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -162,7 +170,23 @@ fun SettingCompose() {
     }
 
     Box(Modifier.fillMaxSize()) {
-        if (showRivalSetting) {
+        // 二级菜单跳转过渡动画（Material Motion 规范：300ms FastOutSlowInEasing）
+        AnimatedContent(
+            targetState = showRivalSetting,
+            transitionSpec = {
+                if (targetState) {
+                    // 进入 Rival 设置：从右滑入 + 淡入，旧页左移淡出
+                    (slideInHorizontally(tween(300, easing = FastOutSlowInEasing)) { it } + fadeIn(tween(300))) togetherWith
+                        (slideOutHorizontally(tween(300, easing = FastOutSlowInEasing)) { -it / 3 } + fadeOut(tween(300)))
+                } else {
+                    // 返回设置主页：从左滑入 + 淡入，旧页右移淡出
+                    (slideInHorizontally(tween(300, easing = FastOutSlowInEasing)) { -it / 3 } + fadeIn(tween(300))) togetherWith
+                        (slideOutHorizontally(tween(300, easing = FastOutSlowInEasing)) { it } + fadeOut(tween(300)))
+                }
+            },
+            label = "RivalSettingTransition"
+        ) { showRival ->
+        if (showRival) {
             RivalSettingCompose(onBack = { showRivalSetting = false })
         } else {
         LazyVerticalStaggeredGrid(
@@ -751,6 +775,7 @@ fun SettingCompose() {
                     WindowInsetsSpacer.BottomPaddingSpacer()
                 }
             }
+        }
         }
         }
 

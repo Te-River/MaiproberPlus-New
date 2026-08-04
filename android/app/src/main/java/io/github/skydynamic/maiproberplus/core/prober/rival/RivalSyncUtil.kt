@@ -107,6 +107,16 @@ object RivalSyncUtil {
             report("通过 Rival 同步失败：未拉到成绩，请检查 Rival 设置")
             return
         }
+        // 上传前剔除：本地曲库（落雪 song/list）没有的曲子跳过，避免整批被拒（song not found）。
+        // 映射规则与上传一致：DX 谱面 musicId=base+10000 取余查 base id，宴会场原样。
+        val uploadScores = scores.filter { s ->
+            val baseId = when {
+                s.songId >= 100000 -> s.songId
+                s.songId >= 10000 -> s.songId % 10000
+                else -> s.songId
+            }
+            MaimaiData.MAIMAI_SONG_LIST.any { it.id == baseId }
+        }
         val config = application.configManager.config
         val importToken = when (platform) {
             ProberPlatform.LXNS -> {
@@ -115,13 +125,17 @@ object RivalSyncUtil {
             ProberPlatform.DIVING_FISH -> config.divingfishToken
             ProberPlatform.LOCAL -> ""
         }
+        val excludedCount = scores.size - uploadScores.size
         val ok = platform.factory.uploadMaimaiProberData(
             importToken = importToken,
             authUrl = "",
-            externalScores = scores
+            externalScores = uploadScores
         )
-        // 只报上传数量，剔除/跳过的记录只写 log 不给用户看
-        report(if (ok) "成功上传 ${scores.size} 首至${platform.proberName}" else "成绩同步失败")
+        // 剔除记录：只报数量，明细只写 log 不给用户看
+        if (excludedCount > 0) {
+            report("共剔除 $excludedCount 首被删除乐曲")
+        }
+        report(if (ok) "成功上传 ${uploadScores.size} 首至${platform.proberName}" else "成绩同步失败")
     }
 
     /** QR 鉴权：POST authServerUrl，拿 userId/token 存本地。返回是否成功。 */
@@ -274,19 +288,7 @@ object RivalSyncUtil {
                 return emptyList()
             }
             for (m in page.userRivalMusicList) {
-                // 对齐 Mizuki lib_lxns._prefilter_with_music_db：本地曲库（落雪 song/list）
-                // 不存在的曲子跳过，避免上传整批被落雪拒（song not found）。
-                // 映射规则与上传一致：DX 谱面 musicId=base+10000 取余查 base id，
-                // 宴会场 id 原样，标准谱面原样
-                val baseId = when {
-                    m.musicId >= 100000 -> m.musicId
-                    m.musicId >= 10000 -> m.musicId % 10000
-                    else -> m.musicId
-                }
-                if (MaimaiData.MAIMAI_SONG_LIST.find { it.id == baseId } == null) {
-                    ErrorLog.logSync("Rival", "本地曲库无此曲 musicId=${m.musicId}，跳过", "W")
-                    continue
-                }
+                // 拉取阶段全量保留（提示用总获取数），剔除统一在 uploadToProber 上传前做
                 for (d in m.userRivalMusicDetailList) {
                     all += toEntity(m.musicId, d)
                 }
