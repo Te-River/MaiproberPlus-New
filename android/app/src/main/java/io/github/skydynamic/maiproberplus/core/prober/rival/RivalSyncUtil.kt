@@ -207,14 +207,16 @@ object RivalSyncUtil {
             sendMessageToUi("未保存 userId，请先 QR 鉴权")
             return emptyList()
         }
-        if (cfg.gameServerUrl.isBlank() || cfg.apiHash.isBlank() || cfg.cryptKey.isBlank() || cfg.cryptIv.isBlank()) {
-            ErrorLog.logSync("Rival", "Rival 设置缺失必填项：游戏服务器网址/哈希/加密 Key/加密 IV", "W")
-            DebugLog.log("W", "Rival", "Rival 设置缺失必填项：游戏服务器网址/哈希/加密 Key/加密 IV")
-            sendMessageToUi("Rival 设置缺失必填项：游戏服务器网址/哈希/加密 Key/加密 IV")
+        if (cfg.gameServerUrl.isBlank() || cfg.apiHash.isBlank() || cfg.cryptObfuscate.isBlank() || cfg.cryptKey.isBlank() || cfg.cryptIv.isBlank()) {
+            ErrorLog.logSync("Rival", "Rival 设置缺失必填项：游戏服务器网址/哈希/混淆参数/加密 Key/加密 IV", "W")
+            DebugLog.log("W", "Rival", "Rival 设置缺失必填项：游戏服务器网址/哈希/混淆参数/加密 Key/加密 IV")
+            sendMessageToUi("Rival 设置缺失必填项：游戏服务器网址/哈希/混淆参数/加密 Key/加密 IV")
             return emptyList()
         }
-        // gameServerUrl（含尾斜杠）+ apiHash 拼成完整请求 URL；host 仅作 Header 用
-        val url = "${cfg.gameServerUrl}${cfg.apiHash}"
+        // gameServerUrl（含尾斜杠）+ cryptObfuscate + "/" + apiHash 拼成完整请求 URL；
+        // 对齐 Mizuki lib_game._call_api 实际端点结构（Maimai2Servlet/<obfuscate>/<apiHash>）。
+        // host 仅作 Header 用
+        val url = "${cfg.gameServerUrl}${cfg.cryptObfuscate}/${cfg.apiHash}"
         val host = cfg.gameServerUrl
             .removePrefix("https://").removePrefix("http://").substringBefore('/')
 
