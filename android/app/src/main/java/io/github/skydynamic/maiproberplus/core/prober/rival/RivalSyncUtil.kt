@@ -11,6 +11,7 @@ import io.github.skydynamic.maiproberplus.core.prober.ProberPlatform
 import io.github.skydynamic.maiproberplus.core.prober.client
 import io.github.skydynamic.maiproberplus.core.prober.sendMessageToUi
 import io.github.skydynamic.maiproberplus.core.utils.ErrorLog
+import io.github.skydynamic.maiproberplus.core.utils.DebugLog
 import io.github.skydynamic.maiproberplus.ui.compose.sync.SyncViewModel
 import io.ktor.client.request.header
 import io.ktor.client.request.post
@@ -89,9 +90,10 @@ object RivalSyncUtil {
      * @param onProgress 实时进度回调（就地显文本而非弹 InfoDialog 弹窗遮盖进度条）
      */
     suspend fun uploadToProber(onProgress: (String) -> Unit = ::sendMessageToUi) {
-        // 包装 onProgress：每条提示同时写 sync.log，便于后续翻 log 复盘
+        // 包装 onProgress：每条提示同时写 sync.log + debug.log，便于后续翻 log 复盘
         val report: (String) -> Unit = { msg ->
             ErrorLog.logSync("Rival", msg)
+            DebugLog.log("I", "Rival", msg)
             onProgress(msg)
         }
         val platform = GlobalViewModel.proberPlatform
@@ -126,6 +128,7 @@ object RivalSyncUtil {
         val cfg = application.configManager.config.rivalSyncConfig
         if (qrCode.isBlank()) {
             ErrorLog.logSync("Rival", "二维码不能为空", "W")
+            DebugLog.log("W", "Rival", "二维码不能为空")
             sendMessageToUi("二维码不能为空")
             return false
         }
@@ -135,6 +138,7 @@ object RivalSyncUtil {
             .format(Date())
         if (cfg.keychip.isBlank() || cfg.authSalt.isBlank() || cfg.authServerUrl.isBlank()) {
             ErrorLog.logSync("Rival", "类型一配置缺失：keychip/authSalt/authServerUrl", "W")
+            DebugLog.log("W", "Rival", "类型一配置缺失：keychip/authSalt/authServerUrl")
             sendMessageToUi("类型一配置缺失：keychip/authSalt/authServerUrl")
             return false
         }
@@ -157,11 +161,13 @@ object RivalSyncUtil {
             if (resp.status.value != 200) {
                 ErrorLog.logError(TAG, "鉴权 HTTP ${resp.status}: $respText")
                 ErrorLog.logSync("Rival", "鉴权 HTTP ${resp.status}: $respText", "E")
+                DebugLog.log("E", "Rival", "鉴权 HTTP ${resp.status}: $respText")
                 sendMessageToUi("鉴权 HTTP 错误: ${resp.status}")
                 return false
             }
             val data = try { json.decodeFromString<AuthResponse>(respText) } catch (_: Exception) {
                 ErrorLog.logSync("Rival", "鉴权响应解析失败: $respText", "E")
+                DebugLog.log("E", "Rival", "鉴权响应解析失败: $respText")
                 sendMessageToUi("鉴权响应解析失败: $respText")
                 return false
             }
@@ -173,17 +179,20 @@ object RivalSyncUtil {
                 }
                 sendMessageToUi(msg)
                 ErrorLog.logSync("Rival", "鉴权拒绝: $msg", "W")
+                DebugLog.log("W", "Rival", "鉴权拒绝: $msg")
                 return false
             }
             cfg.userId = data.userID.toString()
             cfg.token = data.token ?: ""
             application.configManager.save()
             ErrorLog.logSync("Rival", "鉴权成功，userId=${data.userID}")
+            DebugLog.log("I", "Rival", "鉴权成功，userId=${data.userID}")
             sendMessageToUi("鉴权成功，userId=${data.userID}")
             true
         } catch (e: Exception) {
             ErrorLog.logError(TAG, "鉴权异常: ${e.message}", e)
             ErrorLog.logSync("Rival", "鉴权异常: ${e.message}", "E", e)
+            DebugLog.log("E", "Rival", "鉴权异常: ${e.message}", e)
             sendMessageToUi("鉴权异常: ${e.message}")
             false
         }
@@ -194,11 +203,13 @@ object RivalSyncUtil {
         val cfg = application.configManager.config.rivalSyncConfig
         val userId = cfg.userId.toIntOrNull() ?: run {
             ErrorLog.logSync("Rival", "未保存 userId，请先 QR 鉴权", "W")
+            DebugLog.log("W", "Rival", "未保存 userId，请先 QR 鉴权")
             sendMessageToUi("未保存 userId，请先 QR 鉴权")
             return emptyList()
         }
         if (cfg.gameServerUrl.isBlank() || cfg.apiHash.isBlank() || cfg.cryptKey.isBlank() || cfg.cryptIv.isBlank()) {
             ErrorLog.logSync("Rival", "Rival 设置缺失必填项：游戏服务器网址/哈希/加密 Key/加密 IV", "W")
+            DebugLog.log("W", "Rival", "Rival 设置缺失必填项：游戏服务器网址/哈希/加密 Key/加密 IV")
             sendMessageToUi("Rival 设置缺失必填项：游戏服务器网址/哈希/加密 Key/加密 IV")
             return emptyList()
         }
@@ -230,22 +241,26 @@ object RivalSyncUtil {
             } catch (e: Exception) {
                 ErrorLog.logError(TAG, "拉取对手成绩异常: ${e.message}", e)
                 ErrorLog.logSync("Rival", "拉取对手成绩异常: ${e.message}", "E", e)
+                DebugLog.log("E", "Rival", "拉取对手成绩异常: ${e.message}", e)
                 sendMessageToUi("拉取对手成绩异常: ${e.message}")
                 return emptyList()
             }
             if (resp.status.value != 200) {
                 ErrorLog.logSync("Rival", "拉取对手成绩 HTTP ${resp.status}", "E")
+                DebugLog.log("E", "Rival", "拉取对手成绩 HTTP ${resp.status}")
                 sendMessageToUi("拉取对手成绩 HTTP ${resp.status}")
                 return emptyList()
             }
             val decrypted = try { decrypt(resp.bodyAsBytes(), cfg) } catch (e: Exception) {
                 ErrorLog.logError(TAG, "解密响应失败: ${e.message}", e)
                 ErrorLog.logSync("Rival", "解密响应失败: ${e.message}", "E", e)
+                DebugLog.log("E", "Rival", "解密响应失败: ${e.message}", e)
                 sendMessageToUi("解密响应失败: ${e.message}")
                 return emptyList()
             }
             val page = try { json.decodeFromString<RivalMusicResponse>(decrypted) } catch (_: Exception) {
                 ErrorLog.logSync("Rival", "响应解析失败: $decrypted", "E")
+                DebugLog.log("E", "Rival", "响应解析失败: $decrypted")
                 sendMessageToUi("响应解析失败: $decrypted")
                 return emptyList()
             }

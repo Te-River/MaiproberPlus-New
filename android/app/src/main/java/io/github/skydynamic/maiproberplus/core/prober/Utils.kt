@@ -16,6 +16,9 @@ import io.github.skydynamic.maiproberplus.core.utils.WechatRequestUtil.WX_WINDOW
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.cio.CIO
 import io.ktor.client.plugins.HttpResponseValidator
+import io.ktor.client.plugins.logging.LogLevel
+import io.ktor.client.plugins.logging.Logging
+import io.ktor.client.plugins.logging.Logger
 import io.ktor.client.plugins.HttpTimeout
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.plugins.cookies.AcceptAllCookiesStorage
@@ -53,6 +56,15 @@ val client = HttpClient(CIO) {
         storage = AcceptAllCookiesStorage()
     }
     expectSuccess = false
+    // 全量网络日志：用 Ktor 内置 Logging interceptor + 自定义 logger 写 debug.log
+    install(Logging) {
+        logger = object : Logger {
+            override fun log(message: String) {
+                DebugLog.log("D", "Network", message)
+            }
+        }
+        level = LogLevel.HEADERS
+    }
     HttpResponseValidator {
         handleResponseException { cause, _ ->
             DebugLog.log("E", "ProberUtil", "请求失败: ${cause.message}", cause)
