@@ -274,6 +274,19 @@ object RivalSyncUtil {
                 return emptyList()
             }
             for (m in page.userRivalMusicList) {
+                // 对齐 Mizuki lib_lxns._prefilter_with_music_db：本地曲库（落雪 song/list）
+                // 不存在的曲子跳过，避免上传整批被落雪拒（song not found）。
+                // 映射规则与上传一致：DX 谱面 musicId=base+10000 取余查 base id，
+                // 宴会场 id 原样，标准谱面原样
+                val baseId = when {
+                    m.musicId >= 100000 -> m.musicId
+                    m.musicId >= 10000 -> m.musicId % 10000
+                    else -> m.musicId
+                }
+                if (MaimaiData.MAIMAI_SONG_LIST.find { it.id == baseId } == null) {
+                    ErrorLog.logSync("Rival", "本地曲库无此曲 musicId=${m.musicId}，跳过", "W")
+                    continue
+                }
                 for (d in m.userRivalMusicDetailList) {
                     all += toEntity(m.musicId, d)
                 }
