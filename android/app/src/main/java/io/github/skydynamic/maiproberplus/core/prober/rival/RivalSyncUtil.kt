@@ -101,7 +101,7 @@ object RivalSyncUtil {
             report("Rival 同步不支持本地查分器，请选落雪或水鱼")
             return
         }
-        report("开始拉取成绩并上传到${platform.proberName}")
+        report("开始拉取成绩")
         val scores = fetchRivalScores(report)
         if (scores.isEmpty()) {
             report("通过 Rival 同步失败：未拉到成绩，请检查 Rival 设置")
@@ -121,7 +121,7 @@ object RivalSyncUtil {
             externalScores = scores
         )
         // 只报上传数量，剔除/跳过的记录只写 log 不给用户看
-        report(if (ok) "成绩同步成功，已上传 ${scores.size} 首" else "成绩同步失败")
+        report(if (ok) "成功上传 ${scores.size} 首至${platform.proberName}" else "成绩同步失败")
     }
 
     /** QR 鉴权：POST authServerUrl，拿 userId/token 存本地。返回是否成功。 */
@@ -295,7 +295,7 @@ object RivalSyncUtil {
             // 每页进度反馈，避免用户看着进度条"一直在转"以为卡死
             onProgress("拉取成绩中，已拉 ${all.size} 条${if (nextIndex != 0) "，继续拉下一页" else ""}")
         } while (nextIndex != 0)
-        onProgress("拉取成绩完成，共 ${all.size} 条")
+        onProgress("拉取完成，共 ${all.size} 条")
         return all
     }
 

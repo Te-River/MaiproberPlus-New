@@ -90,7 +90,7 @@ class LxnsProberUtil : IProberUtil {
         val isCache = application.configManager.config.localConfig.cacheScore
 
         application.sendNotification("落雪查分器", "舞萌数据上传中")
-        sendMessageToUi("开始获取舞萌数据并上传到落雪查分器")
+        sendMessageToUi("开始上传至落雪查分器")
         val scores = externalScores ?: getMaimaiScoreData(authUrl)
 
         if (scores.isEmpty()) {

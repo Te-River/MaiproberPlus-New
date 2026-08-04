@@ -52,7 +52,7 @@ class DivingFishProberUtil : IProberUtil {
         val isCache = application.configManager.config.localConfig.cacheScore
 
         application.sendNotification("水鱼查分器", "正在进行查分")
-        sendMessageToUi("开始获取舞萌DX数据并上传到水鱼查分器")
+        sendMessageToUi("开始上传至水鱼查分器")
 
         // externalScores 非空（如 Rival 同步拉的对手成绩）：跳过 VPN 抓包 pageparser，
         // 直接转 DivingFishMaimaiScoreBody POST 给水鱼 update_records。
