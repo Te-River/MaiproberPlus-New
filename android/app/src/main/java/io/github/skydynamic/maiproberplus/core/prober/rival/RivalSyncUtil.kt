@@ -274,12 +274,6 @@ object RivalSyncUtil {
                 return emptyList()
             }
             for (m in page.userRivalMusicList) {
-                // 对齐 Mizuki lib_lxns._prefilter_with_music_db：本地曲库不存在的曲子跳过，
-                // 避免 title 变 Unknown(musicId) 上传时 getSongIdFromTitle 返回 -1 被落雪拒收
-                if (MaimaiData.MAIMAI_SONG_LIST.find { it.id == m.musicId } == null) {
-                    ErrorLog.logSync("Rival", "本地曲库无此曲 musicId=${m.musicId}，跳过", "W")
-                    continue
-                }
                 for (d in m.userRivalMusicDetailList) {
                     all += toEntity(m.musicId, d)
                 }
