@@ -44,6 +44,7 @@ import io.github.skydynamic.maiproberplus.core.config.ConfigStorage
 import io.github.skydynamic.maiproberplus.core.data.GameType
 import io.github.skydynamic.maiproberplus.core.data.maimai.MaimaiScoreManager.getMaimaiScoreCache
 import io.github.skydynamic.maiproberplus.core.prober.ProberPlatform
+import io.github.skydynamic.maiproberplus.core.prober.lxns.LxnsOAuthUtil
 import io.github.skydynamic.maiproberplus.core.prober.sendMessageToUi
 import io.github.skydynamic.maiproberplus.ui.compose.sync.SyncViewModel
 import io.github.skydynamic.maiproberplus.core.utils.ChuniB30ImageGenerater
@@ -236,10 +237,10 @@ fun ColumnScope.MaiContent(
                         }
                     }
                     ProberPlatform.LXNS -> {
-                        // OAuth 模式下用 lxnsOAuthAccessToken（无需 lxnsToken）；
-                        // Token 模式沿用 lxnsToken。OAuth 未授权时提示去完成授权，不误导填 Token。
+                        // OAuth 模式下走 ensureValidAccessToken（剩余 ≤2min 自动刷新），
+                        // 刷新失败返回 null 置空；Token 模式沿用 lxnsToken。
                         val lxnsToken = if (SyncViewModel.tokenInputMode == 1)
-                            config.lxnsOAuthAccessToken else config.lxnsToken
+                            LxnsOAuthUtil.ensureValidAccessToken() ?: "" else config.lxnsToken
                         if (lxnsToken.isEmpty()) {
                             sendMessageToUi(
                                 if (SyncViewModel.tokenInputMode == 1)
@@ -285,10 +286,10 @@ fun ColumnScope.ChuniContent(
                         }
                     }
                     ProberPlatform.LXNS -> {
-                        // OAuth 模式下用 lxnsOAuthAccessToken（无需 lxnsToken）；
-                        // Token 模式沿用 lxnsToken。OAuth 未授权时提示去完成授权，不误导填 Token。
+                        // OAuth 模式下走 ensureValidAccessToken（剩余 ≤2min 自动刷新），
+                        // 刷新失败返回 null 置空；Token 模式沿用 lxnsToken。
                         val lxnsToken = if (SyncViewModel.tokenInputMode == 1)
-                            config.lxnsOAuthAccessToken else config.lxnsToken
+                            LxnsOAuthUtil.ensureValidAccessToken() ?: "" else config.lxnsToken
                         if (lxnsToken.isEmpty()) {
                             sendMessageToUi(
                                 if (SyncViewModel.tokenInputMode == 1)

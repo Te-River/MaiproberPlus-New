@@ -43,8 +43,8 @@ object LxnsOAuthUtil {
     private const val AUTHORIZE_URL = "https://maimai.lxns.net/oauth/authorize"
     private const val TOKEN_URL = "https://maimai.lxns.net/api/v0/oauth/token"
 
-    /** access_token 提前刷新的缓冲（秒），避免临界过期时拿到就过期。 */
-    private const val REFRESH_BUFFER_SECONDS = 60L
+    /** access_token 提前刷新的缓冲（秒）：剩余 ≤2min 即强制刷新，避免临界过期拿到就过期。 */
+    private const val REFRESH_BUFFER_SECONDS = 120L
 
     private val json = Json { ignoreUnknownKeys = true }
 

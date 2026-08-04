@@ -247,12 +247,24 @@ class LxnsProberUtil : IProberUtil {
 
     override suspend fun getMaimaiProberData(importToken: String): List<MaimaiScoreEntity> {
         try {
-            val auth = resolveAuthHeader(importToken) ?: run {
+            var auth = resolveAuthHeader(importToken) ?: run {
                 sendMessageToUi("落雪授权已失效，请重新授权")
                 return emptyList()
             }
-            val response = client.get("$baseApiUrl/api/v0/user/maimai/player/scores") {
+            var response = client.get("$baseApiUrl/api/v0/user/maimai/player/scores") {
                 header(auth.first, auth.second)
+            }
+            // 401：本地 expireAt 判断可能滞后于服务器实际状态，强制刷新 access_token 后重试一次
+            if (response.status.value == 401 && SyncViewModel.tokenInputMode == 1) {
+                ErrorLog.logSync("Lxns", "获取舞萌数据 401，强制刷新 access_token 重试", "W")
+                DebugLog.log("W", "Lxns", "获取舞萌数据 401，强制刷新 access_token 重试")
+                auth = resolveAuthHeader(importToken, forceRefresh = true) ?: run {
+                    sendMessageToUi("落雪授权已失效，请重新授权")
+                    return emptyList()
+                }
+                response = client.get("$baseApiUrl/api/v0/user/maimai/player/scores") {
+                    header(auth.first, auth.second)
+                }
             }
             if (response.status.value != 200) {
                 sendMessageToUi("获取舞萌数据失败, API返回体: ${response.bodyAsText()}")
@@ -316,12 +328,24 @@ class LxnsProberUtil : IProberUtil {
 
     override suspend fun getChuniScoreBests(importToken: String): List<ChuniScoreEntity> {
         try {
-            val auth = resolveAuthHeader(importToken) ?: run {
+            var auth = resolveAuthHeader(importToken) ?: run {
                 sendMessageToUi("落雪授权已失效，请重新授权")
                 return emptyList()
             }
-            val response = client.get("$baseApiUrl/api/v0/user/chunithm/player/bests") {
+            var response = client.get("$baseApiUrl/api/v0/user/chunithm/player/bests") {
                 header(auth.first, auth.second)
+            }
+            // 401：本地 expireAt 判断可能滞后于服务器实际状态，强制刷新 access_token 后重试一次
+            if (response.status.value == 401 && SyncViewModel.tokenInputMode == 1) {
+                ErrorLog.logSync("Lxns", "获取中二 bests 401，强制刷新 access_token 重试", "W")
+                DebugLog.log("W", "Lxns", "获取中二 bests 401，强制刷新 access_token 重试")
+                auth = resolveAuthHeader(importToken, forceRefresh = true) ?: run {
+                    sendMessageToUi("落雪授权已失效，请重新授权")
+                    return emptyList()
+                }
+                response = client.get("$baseApiUrl/api/v0/user/chunithm/player/bests") {
+                    header(auth.first, auth.second)
+                }
             }
             val body = response.body<LxnsGetChuniScoreBestsResponse>()
             var parseList = addChuniScoreDataToList(
