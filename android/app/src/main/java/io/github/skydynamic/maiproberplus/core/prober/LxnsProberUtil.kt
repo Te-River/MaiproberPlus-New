@@ -192,7 +192,7 @@ class LxnsProberUtil : IProberUtil {
         val isCache = application.configManager.config.localConfig.cacheScore
 
         application.sendNotification("落雪查分器", "中二节奏数据上传中")
-        sendMessageToUi("开始获取中二节奏数据并上传到落雪查分器")
+        sendMessageToUi("开始上传至落雪查分器")
         val scores = getChuniScoreData(authUrl)
 
         if (scores.isEmpty()) {

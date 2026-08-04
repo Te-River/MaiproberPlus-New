@@ -190,7 +190,7 @@ class DivingFishProberUtil : IProberUtil {
         val scores = mutableListOf<ChuniScoreEntity>()
 
         application.sendNotification("水鱼查分器", "正在进行查分")
-        sendMessageToUi("开始获取中二节奏数据并上传到水鱼查分器")
+        sendMessageToUi("开始上传至水鱼查分器")
         fetchChuniScores(authUrl) { diff, body ->
             DebugLog.log("I", "DivingFishProberUtil", "正在上传${diff.diffName}成绩到水鱼查分器")
             val recentParam = if (diff.diffName.lowercase().contains("recent")) "?recent=1" else ""
