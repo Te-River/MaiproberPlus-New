@@ -100,7 +100,10 @@ class LxnsProberUtil : IProberUtil {
 
         val postScores = scores.map {
             LxnsMaimaiScoreBody(
-                id = MaimaiData.getSongIdFromTitle(it.title),
+                // 直接用 entity 的 songId（Rival 拉取的 musicId / VPN 抓包解析的 res.id），
+                // 落雪 API 文档确认 id 就是曲目 musicId，不用 title 反查（反查本地曲库
+                // 没有的曲子返回 -1 会被落雪拒收 invalid song id）
+                id = it.songId,
                 levelIndex = it.diff.diffIndex,
                 // 对齐 Mizuki _transform_for_lxns：原值 /10000 转浮点
                 achievements = it.achievement / 10000.0f,

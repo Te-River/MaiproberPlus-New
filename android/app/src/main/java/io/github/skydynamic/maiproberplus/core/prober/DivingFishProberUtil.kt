@@ -64,7 +64,9 @@ class DivingFishProberUtil : IProberUtil {
             }
             val payload = externalScores.map {
                 DivingFishMaimaiScoreBody(
-                    songId = MaimaiData.getSongIdFromTitle(it.title),
+                    // 直接用 entity 的 songId（Rival 拉取的 musicId），不用 title 反查，
+                    // 对齐 Mizuki lib_fish._transform_for_fish 直接用 musicId
+                    songId = it.songId,
                     title = it.title,
                     level = it.level.toString(),
                     levelIndex = it.diff.diffIndex,
