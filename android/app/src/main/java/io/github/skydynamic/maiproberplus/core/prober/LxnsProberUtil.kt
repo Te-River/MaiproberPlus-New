@@ -48,9 +48,9 @@ class LxnsProberUtil : IProberUtil {
      * `Authorization: Bearer <access_token>`（必要时刷新），Token 模式沿用
      * `X-User-Token: <personal_token>`。返回 null 表示 OAuth 失效需重新授权。
      */
-    private suspend fun resolveAuthHeader(importToken: String): Pair<String, String>? {
+    private suspend fun resolveAuthHeader(importToken: String, forceRefresh: Boolean = false): Pair<String, String>? {
         return if (SyncViewModel.tokenInputMode == 1) {
-            val accessToken = LxnsOAuthUtil.ensureValidAccessToken()
+            val accessToken = LxnsOAuthUtil.ensureValidAccessToken(force = forceRefresh)
                 ?: return null
             "Authorization" to "Bearer $accessToken"
         } else {
@@ -129,7 +129,7 @@ class LxnsProberUtil : IProberUtil {
 
         val body = Json.encodeToString(LxnsMaimaiRequestBody(postScores))
 
-        val postResponse = try {
+        var postResponse = try {
             val auth = resolveAuthHeader(importToken) ?: run {
                 sendMessageToUi("落雪授权已失效，请重新授权")
                 return false
@@ -145,6 +145,30 @@ class LxnsProberUtil : IProberUtil {
             ErrorLog.logError("LxnsProberUtil", "上传失败: $e", e)
             sendMessageToUi("上传失败: $e")
             return false
+        }
+
+        // 401：本地 expireAt 判断可能滞后于服务器实际状态（日志里 token 还有 ~136s 却 401），
+        // 强制刷新 access_token 后重试一次
+        if (postResponse.status.value == 401 && SyncViewModel.tokenInputMode == 1) {
+            ErrorLog.logSync("Lxns", "上传返回 401，强制刷新 access_token 重试", "W")
+            DebugLog.log("W", "Lxns", "上传返回 401，强制刷新 access_token 重试")
+            postResponse = try {
+                val auth = resolveAuthHeader(importToken, forceRefresh = true) ?: run {
+                    sendMessageToUi("落雪授权已失效，请重新授权")
+                    return false
+                }
+                client.post("$baseApiUrl/api/v0/user/maimai/player/scores") {
+                    setBody(body)
+                    header(auth.first, auth.second)
+                    headers {
+                        append(HttpHeaders.ContentType, "application/json")
+                    }
+                }
+            } catch (e: Exception) {
+                ErrorLog.logError("LxnsProberUtil", "上传失败(重试): $e", e)
+                sendMessageToUi("上传失败: $e")
+                return false
+            }
         }
 
         val postScoreResponseBody = postResponse.body<LxnsMaimaiResponse>()

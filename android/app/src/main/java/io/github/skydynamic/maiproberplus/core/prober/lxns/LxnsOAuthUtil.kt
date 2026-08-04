@@ -96,10 +96,12 @@ object LxnsOAuthUtil {
      * refresh_token 为空或刷新失败则返回 null，**不清空本地令牌、不主动提示重新授权**，
      * 避免给用户压力——只在 API 实际报错时由调用方提示重新绑定。
      */
-    suspend fun ensureValidAccessToken(): String? {
+    suspend fun ensureValidAccessToken(force: Boolean = false): String? {
         val cfg = application.configManager.config
         val now = System.currentTimeMillis()
-        if (cfg.lxnsOAuthAccessToken.isNotEmpty() &&
+        // 非强制且本地判断 token 仍有效（留 60s 缓冲）时直接返回；
+        // force=true 时跳过有效性检查强制刷新（用于 API 返回 401 后重试）
+        if (!force && cfg.lxnsOAuthAccessToken.isNotEmpty() &&
             cfg.lxnsOAuthAccessTokenExpireAt > now + REFRESH_BUFFER_SECONDS * 1000
         ) {
             return cfg.lxnsOAuthAccessToken
