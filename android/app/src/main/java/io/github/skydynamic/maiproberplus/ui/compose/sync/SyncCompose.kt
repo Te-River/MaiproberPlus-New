@@ -7,13 +7,17 @@ import android.net.Uri
 import android.net.VpnService
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
 import androidx.compose.animation.shrinkVertically
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -525,14 +529,24 @@ fun SyncCompose() {
                     }
                 }
             ) {
-                if (rivalSyncing) {
-                    LinearProgressIndicator(
-                        modifier = Modifier
-                            .fillMaxWidth(0.9f)
-                            .height(6.dp)
-                    )
-                } else {
-                    Text("通过 Rivral 同步")
+                // 进度条↔文本切换用 AnimatedContent 平滑过渡，避免高光消失瞬间卡顿
+                AnimatedContent(
+                    targetState = rivalSyncing,
+                    transitionSpec = {
+                        (fadeIn(tween(300, easing = FastOutSlowInEasing)) + scaleIn(tween(300, easing = FastOutSlowInEasing), initialScale = 0.8f)) togetherWith
+                            (fadeOut(tween(300, easing = FastOutSlowInEasing)) + scaleOut(tween(300, easing = FastOutSlowInEasing), targetScale = 0.8f))
+                    },
+                    label = "RivalSyncButtonContent"
+                ) { syncing ->
+                    if (syncing) {
+                        LinearProgressIndicator(
+                            modifier = Modifier
+                                .fillMaxWidth(0.9f)
+                                .height(6.dp)
+                        )
+                    } else {
+                        Text("通过 Rivral 同步")
+                    }
                 }
             }
             }
