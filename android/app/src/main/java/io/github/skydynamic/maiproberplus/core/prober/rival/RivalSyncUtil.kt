@@ -207,17 +207,18 @@ object RivalSyncUtil {
             sendMessageToUi("未保存 userId，请先 QR 鉴权")
             return emptyList()
         }
-        if (cfg.gameServerUrl.isBlank() || cfg.apiHash.isBlank() || cfg.cryptObfuscate.isBlank() || cfg.cryptKey.isBlank() || cfg.cryptIv.isBlank()) {
-            ErrorLog.logSync("Rival", "Rival 设置缺失必填项：游戏服务器网址/哈希/混淆参数/加密 Key/加密 IV", "W")
-            DebugLog.log("W", "Rival", "Rival 设置缺失必填项：游戏服务器网址/哈希/混淆参数/加密 Key/加密 IV")
-            sendMessageToUi("Rival 设置缺失必填项：游戏服务器网址/哈希/混淆参数/加密 Key/加密 IV")
+        if (cfg.gameServerUrl.isBlank() || cfg.apiHash.isBlank() || cfg.cryptKey.isBlank() || cfg.cryptIv.isBlank()) {
+            ErrorLog.logSync("Rival", "Rival 设置缺失必填项：游戏服务器网址/哈希/加密 Key/加密 IV", "W")
+            DebugLog.log("W", "Rival", "Rival 设置缺失必填项：游戏服务器网址/哈希/加密 Key/加密 IV")
+            sendMessageToUi("Rival 设置缺失必填项：游戏服务器网址/哈希/加密 Key/加密 IV")
             return emptyList()
         }
-        // gameServerUrl（含尾斜杠）+ cryptObfuscate + "/" + apiHash 拼成完整请求 URL；
-        // 对齐 Mizuki lib_game._call_api 实际端点结构（Maimai2Servlet/<obfuscate>/<apiHash>）。
-        // 三项都 trim，防用户填 gameServerUrl 尾随空格致 URL 含 %20 服务器返回 200 空体。
+        // gameServerUrl（含尾斜杠）+ apiHash 拼成完整请求 URL；
+        // 对齐 Mizuki lib_game._call_api：url = f"{base_url}{api_hash}"，
+        // cryptObfuscate 只参与 apiHash 计算，不拼进 URL（硬塞 obfuscate 段服务器返回 200 空体）。
+        // 两项都 trim，防用户填 gameServerUrl 尾随空格致 URL 含 %20 服务器返回 200 空体。
         // host 仅作 Header 用
-        val url = "${cfg.gameServerUrl.trim()}${cfg.cryptObfuscate.trim()}/${cfg.apiHash.trim()}"
+        val url = "${cfg.gameServerUrl.trim()}${cfg.apiHash.trim()}"
         val host = cfg.gameServerUrl.trim()
             .removePrefix("https://").removePrefix("http://").substringBefore('/')
 
