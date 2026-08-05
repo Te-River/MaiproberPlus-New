@@ -736,7 +736,7 @@ fun SettingCompose() {
                         title = "项目仓库",
                         description = "项目的GitHub仓库"
                     ) {
-                        val uri = Uri.parse("https://github.com/SkyDynamic/MaiproberPlus")
+                        val uri = Uri.parse("https://github.com/Te-River/Maiupload")
                         val intent = Intent(Intent.ACTION_VIEW, uri)
                         intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
                         application.startActivity(intent)
@@ -750,7 +750,7 @@ fun SettingCompose() {
                         title = "反馈问题",
                         description = "跳转到Github Issues界面进行问题反馈"
                     ) {
-                        val uri = Uri.parse("https://github.com/SkyDynamic/MaiproberPlus/issues")
+                        val uri = Uri.parse("https://github.com/Te-River/Maiupload/issues")
                         val intent = Intent(Intent.ACTION_VIEW, uri)
                         intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
                         application.startActivity(intent)

@@ -106,7 +106,7 @@ private suspend fun getLatestReleaseFromGitHub(): Release? {
 
     return try {
         val response: HttpResponse =
-            client.get("https://api.github.com/repos/SkyDynamic/MaiproberPlus/releases")
+            client.get("https://api.github.com/repos/Te-River/Maiupload/releases")
         val tags: List<Release> = response.body()
         tags.sortedByDescending { parseDateToTimestamp(it.createdAt) }.firstOrNull()
     } catch (e: Exception) {
@@ -128,7 +128,7 @@ private suspend fun getCommitsFromGitHub(): List<Commit>? {
 
     return try {
         val response: HttpResponse =
-            client.get("https://api.github.com/repos/SkyDynamic/MaiproberPlus/commits")
+            client.get("https://api.github.com/repos/Te-River/Maiupload/commits")
         response.body()
     } catch (e: Exception) {
         Log.e("CheckUpdateUtils", "Failed to fetch commits: ${e.message}")
@@ -188,7 +188,7 @@ suspend fun checkReleaseUpdate(versionName: String = BuildConfig.VERSION_NAME): 
 
     return try {
         val response: HttpResponse =
-            client.get("https://api.github.com/repos/SkyDynamic/MaiproberPlus/releases/latest")
+            client.get("https://api.github.com/repos/Te-River/Maiupload/releases/latest")
         val release: Release = response.body()
         val latestVersionBody = formatVersionName(release.tagName)
 
