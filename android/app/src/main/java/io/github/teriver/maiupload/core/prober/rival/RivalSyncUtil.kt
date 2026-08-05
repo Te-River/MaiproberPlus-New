@@ -332,9 +332,10 @@ object RivalSyncUtil {
             songId = musicId,
             title = title,
             level = MaimaiData.getLevelValue(title, diff, type),
-            // Rival 返回百分比小数（如 99.1523），entity 存放大 10000 倍的整形式（991523），
-            // 与水鱼/落雪上传时 /10000 还原的方向一致；不放大则显示成百万级荒谬值
-            achievement = d.achievement * 10000,
+            // Mizuki/Artemis 数据库里 achievement 字段就是 Integer，存放大 10000 倍的整形式
+            // （如 991523 表示 99.1523%）。Rival 响应返的已是该整形式，直接存，
+            // 与水鱼/落雪上传时 /10000 还原的方向一致。上次多乘一次 10000 致显示成荒谬值。
+            achievement = d.achievement,
             dxScore = d.deluxscoreMax,
             rating = 0,
             version = version,
