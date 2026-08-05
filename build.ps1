@@ -1,10 +1,11 @@
 # Build script (PowerShell)
 # Usage:
+#   powershell -ExecutionPolicy Bypass -File D:\Github\MaiproberPlus-New\build.ps1           # 默认 snapshot（CI/in-app updater）
+#   powershell -ExecutionPolicy Bypass -File D:\Github\MaiproberPlus-New\build.ps1 -rel      # 开发者显式构建 Release
 #   powershell -ExecutionPolicy Bypass -File D:\Github\MaiproberPlus-New\build.ps1 debug
-#   powershell -ExecutionPolicy Bypass -File D:\Github\MaiproberPlus-New\build.ps1 release
 #   powershell -ExecutionPolicy Bypass -File D:\Github\MaiproberPlus-New\build.ps1 snapshot
 #   or in PowerShell:
-#     & D:\Github\MaiproberPlus-New\build.ps1 release
+#     & D:\Github\MaiproberPlus-New\build.ps1 -rel
 #
 # Override via env vars: JAVA_HOME / ANDROID_HOME / LXNS_OAUTH_CLIENT_ID
 #
@@ -45,14 +46,27 @@ $env:LXNS_OAUTH_CLIENT_ID = $LxnsOAuthClientId
 Write-Host ("[INFO] LXNS_OAUTH_CLIENT_ID={0}..." -f $LxnsOAuthClientId.Substring(0, [Math]::Min(8, $LxnsOAuthClientId.Length))) -ForegroundColor Cyan
 
 # --- Build target ---
-$Target = if ($args.Count -ge 1) { $args[0] } else { "release" }
+# -rel 开关：显式构建 Release（开发者正式发版用）
+# 不带 -rel 时：位置参数指定 debug/snapshot；无参数默认 snapshot（CI/in-app updater）
+$IsRelease = $args -contains "-rel"
+$Positional = @($args | Where-Object { $_ -ne "-rel" })
+
+if ($IsRelease) {
+    $Target = "release"
+} elseif ($Positional.Count -ge 1) {
+    $Target = $Positional[0]
+} else {
+    $Target = "snapshot"
+}
+
 switch ($Target) {
     "debug"   { $GradleTask = "assembleDebug" }
     "release" { $GradleTask = "assembleRelease" }
     "snapshot"{ $GradleTask = "assembleSnapshot" }
     default {
         Write-Host "[ERROR] Unknown build target: $Target" -ForegroundColor Red
-        Write-Host "  Usage: build.ps1 [debug|release|snapshot]" -ForegroundColor Red
+        Write-Host "  Usage: build.ps1 [debug|snapshot] [-rel]" -ForegroundColor Red
+        Write-Host "         build.ps1 -rel               (显式构建 Release)" -ForegroundColor Red
         exit 1
     }
 }
