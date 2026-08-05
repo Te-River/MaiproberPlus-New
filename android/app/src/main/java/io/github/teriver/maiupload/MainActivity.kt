@@ -5,7 +5,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import io.github.teriver.maiupload.ui.AppContent
-import io.github.teriver.maiupload.ui.theme.MaiProberplusTheme
+import io.github.teriver.maiupload.ui.theme.MaiuploadTheme
 
 val NOTIFICATION_CHANNEL_ID = "io.github.teriver.maiupload.notification.channel.default"
 val PROCESS_NOTIFICATION_CHANNEL_ID = "io.github.teriver.maiupload.notification.channel.process"
@@ -15,7 +15,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-            MaiProberplusTheme(
+            MaiuploadTheme(
                 dynamicColor = false
             ) {
                 AppContent()

@@ -35,6 +35,7 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -353,10 +354,10 @@ fun ChuniScoreDetailDialog(
                     onClick = {
                         openDeleteConfirmDialog = true
                     },
-                    colors = ButtonDefaults.buttonColors(Color.Red)
+                    colors = ButtonDefaults.buttonColors(MaterialTheme.colorScheme.error)
                 ) {
-                    Icon(Icons.Default.Delete, null, tint = Color.White)
-                    Text("删除该成绩", color = Color.White)
+                    Icon(Icons.Default.Delete, null, tint = MaterialTheme.colorScheme.onError)
+                    Text("删除该成绩", color = MaterialTheme.colorScheme.onError)
                 }
             }
         }

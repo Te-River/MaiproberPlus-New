@@ -33,6 +33,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -231,7 +232,7 @@ fun ChuniCreateScoreDialog(
                                     "${selectionDiff!!.name} $diffLevel",
                                     fontSize = 11.5.sp,
                                     fontWeight = FontWeight.Bold,
-                                    color = Color.White
+                                    color = MaterialTheme.colorScheme.onPrimary
                                 )
                             }
                         }
@@ -421,7 +422,7 @@ fun ChuniCreateScoreDialog(
                 HorizontalDivider(
                     modifier = Modifier
                         .padding(horizontal = 16.dp, vertical = 8.dp),
-                    color = Color.LightGray,
+                    color = MaterialTheme.colorScheme.outlineVariant,
                     thickness = 1.dp
                 )
 

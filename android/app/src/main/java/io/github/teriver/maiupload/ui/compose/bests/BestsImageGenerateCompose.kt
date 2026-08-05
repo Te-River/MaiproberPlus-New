@@ -20,6 +20,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -199,7 +200,7 @@ fun BestsImageGenerateCompose() {
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .background(Color.Black)
+                    .background(MaterialTheme.colorScheme.scrim)
                     .pointerInput(Unit) {
                         detectTapGestures(onTap = { showImagePreview = false }) // 点击外部关闭
                     }

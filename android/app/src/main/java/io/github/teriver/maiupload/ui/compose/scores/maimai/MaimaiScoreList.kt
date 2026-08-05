@@ -32,6 +32,7 @@ import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -239,10 +240,10 @@ fun MaimaiScoreList(
                     onClick = {
                         openDeleteConfirmDialog = true
                     },
-                    colors = ButtonDefaults.buttonColors(Color.Red)
+                    colors = ButtonDefaults.buttonColors(MaterialTheme.colorScheme.error)
                 ) {
-                    Icon(Icons.Default.Delete, null, tint = Color.White)
-                    Text("删除所有成绩", color = Color.White)
+                    Icon(Icons.Default.Delete, null, tint = MaterialTheme.colorScheme.onError)
+                    Text("删除所有成绩", color = MaterialTheme.colorScheme.onError)
                 }
             }
         }

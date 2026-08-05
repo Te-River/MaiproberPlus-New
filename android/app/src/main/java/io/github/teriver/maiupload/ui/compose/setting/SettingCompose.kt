@@ -3,6 +3,8 @@ package io.github.teriver.maiupload.ui.compose.setting
 import android.content.Intent
 import android.net.Uri
 import android.os.Environment
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
@@ -45,6 +47,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.FileProvider
@@ -52,6 +55,7 @@ import androidx.core.text.isDigitsOnly
 import androidx.lifecycle.viewModelScope
 import io.github.teriver.maiupload.Application.Companion.application
 import io.github.teriver.maiupload.BuildConfig
+import io.github.teriver.maiupload.core.config.ConfigTransfer
 import io.github.teriver.maiupload.core.prober.rival.RivalSyncUtil
 import io.github.teriver.maiupload.GlobalViewModel
 import io.github.teriver.maiupload.core.config.ScoreDisplayType
@@ -568,7 +572,7 @@ fun SettingCompose() {
                         },
                         label = { Text("舞萌DX头像", fontSize = 12.sp) },
                         supportingText = {
-                            Text("*不知道该参数的含义，请勿修改", color = Color.Red)
+                            Text("*不知道该参数的含义，请勿修改", color = MaterialTheme.colorScheme.error)
                         }
                     )
 
@@ -590,7 +594,7 @@ fun SettingCompose() {
                         },
                         label = { Text("舞萌DX姓名框", fontSize = 12.sp) },
                         supportingText = {
-                            Text("*不知道该参数的含义，请勿修改", color = Color.Red)
+                            Text("*不知道该参数的含义，请勿修改", color = MaterialTheme.colorScheme.error)
                         }
                     )
 
@@ -609,7 +613,7 @@ fun SettingCompose() {
 
                     HorizontalDivider(
                         modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-                        color = Color.LightGray,
+                        color = MaterialTheme.colorScheme.outlineVariant,
                         thickness = 1.dp
                     )
 
@@ -678,7 +682,7 @@ fun SettingCompose() {
                     HorizontalDivider(
                         modifier = Modifier
                             .padding(horizontal = 16.dp, vertical = 8.dp),
-                        color = Color.LightGray,
+                        color = MaterialTheme.colorScheme.outlineVariant,
                         thickness = 1.dp
                     )
 
@@ -756,12 +760,98 @@ fun SettingCompose() {
                         application.startActivity(intent)
                     }
 
+                    HorizontalDivider(
+                        modifier = Modifier
+                            .padding(horizontal = 16.dp, vertical = 8.dp),
+                        color = MaterialTheme.colorScheme.outlineVariant,
+                        thickness = 1.dp
+                    )
+
+                    // 导出配置：写入 filesDir，用 ACTION_SEND 分享给他人
+                    val exportContext = LocalContext.current
+                    TextButtonItem(
+                        modifier = Modifier
+                            .padding(start = 15.dp, top = 5.dp, end = 15.dp, bottom = 5.dp)
+                            .fillMaxWidth()
+                            .wrapContentHeight(),
+                        title = "导出配置",
+                        description = "导出成绩抓取/展示/本地设置与用户信息，分享给他人"
+                    ) {
+                        GlobalViewModel.viewModelScope.launch(Dispatchers.IO) {
+                            val path = ConfigTransfer.exportToFile()
+                            withContext(Dispatchers.Main) {
+                                if (path.isNotEmpty()) {
+                                    val file = java.io.File(path)
+                                    val uri = FileProvider.getUriForFile(
+                                        application,
+                                        application.packageName + ".fileprovider",
+                                        file
+                                    )
+                                    val shareIntent = Intent(Intent.ACTION_SEND).apply {
+                                        type = "application/json"
+                                        putExtra(Intent.EXTRA_STREAM, uri)
+                                        putExtra(Intent.EXTRA_TITLE, "Maiupload 配置")
+                                        addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                                    }
+                                    exportContext.startActivity(
+                                        Intent.createChooser(shareIntent, "分享配置文件").apply {
+                                            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                                        }
+                                    )
+                                } else {
+                                    sendMessageToUi("导出失败")
+                                }
+                            }
+                        }
+                    }
+
+                    // 导入配置：用 OpenDocument 选文件，验签后载入
+                    val importContext = LocalContext.current
+                    val importLauncher = rememberLauncherForActivityResult(
+                        contract = ActivityResultContracts.OpenDocument()
+                    ) { uri ->
+                        if (uri != null) {
+                            GlobalViewModel.viewModelScope.launch(Dispatchers.IO) {
+                                val result = try {
+                                    val content = importContext.contentResolver.openInputStream(uri)?.use { stream ->
+                                        stream.bufferedReader().readText()
+                                    } ?: ""
+                                    ConfigTransfer.import(content)
+                                } catch (e: Exception) {
+                                    ConfigTransfer.ImportResult.Corrupted
+                                }
+                                withContext(Dispatchers.Main) {
+                                    val msg = when (result) {
+                                        ConfigTransfer.ImportResult.Success -> "导入成功"
+                                        is ConfigTransfer.ImportResult.VersionTooHigh ->
+                                            "已导入，但注意：该配置来自更高版本的应用（v${result.bundleAppVersion}），" +
+                                            "当前版本 v${BuildConfig.VERSION_NAME}，未识别的字段已自动忽略。"
+                                        ConfigTransfer.ImportResult.Corrupted ->
+                                            "导入失败：文件损坏或签名不符"
+                                    }
+                                    sendMessageToUi(msg)
+                                }
+                            }
+                        }
+                    }
+
+                    TextButtonItem(
+                        modifier = Modifier
+                            .padding(start = 15.dp, top = 5.dp, end = 15.dp, bottom = 5.dp)
+                            .fillMaxWidth()
+                            .wrapContentHeight(),
+                        title = "导入配置",
+                        description = "从分享的配置文件导入设置（验签防篡改）"
+                    ) {
+                        importLauncher.launch(arrayOf("application/json", "*/*"))
+                    }
+
                     Text(
                         """
                          特别感谢Lxns提供的API与优秀的成绩管理页面设计
                          也特别感谢愿意给此项目贡献的开发者与参与APP测试的朋友们
                          本项目遵循Apache LICENSE 2.0协议
-                     """.trimIndent(),
+                        """.trimIndent(),
                         fontSize = 12.sp,
                         modifier = Modifier
                             .padding(15.dp, top = 0.dp, bottom = 0.dp)

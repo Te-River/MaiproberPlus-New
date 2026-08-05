@@ -9,6 +9,7 @@ import androidx.compose.foundation.gestures.forEachGesture
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
@@ -42,7 +43,7 @@ fun ImagePreview(
 
     Box(
         modifier = Modifier
-            .background(Color.Black)
+            .background(MaterialTheme.colorScheme.scrim)
             .fillMaxSize()
             .graphicsLayer {
                 scaleX = scale
