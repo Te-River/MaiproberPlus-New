@@ -300,7 +300,7 @@ fun MaimaiScoreDetailDialog(
                             color = Color(118, 115, 115, 255)
                         )
                         Text(
-                            text = "${DecimalFormat("#." + "0".repeat(4)).format(scoreDetail.achievement)}%",
+                            text = "${DecimalFormat("#." + "0".repeat(4)).format(scoreDetail.achievement / 10000.0f)}%",
                             fontSize = 20.sp,
                             fontWeight = FontWeight.Bold
                         )

@@ -125,7 +125,7 @@ fun MaimaiScoreDetailCard(
             ) {
                 Column {
                     Text(
-                        text = "${DecimalFormat("#." + "0".repeat(4)).format(scoreDetail.achievement)}%",
+                        text = "${DecimalFormat("#." + "0".repeat(4)).format(scoreDetail.achievement / 10000.0f)}%",
                         style = MaterialTheme.typography.titleMedium.copy(
                             shadow = when (scoreStyleType) {
                                 ScoreStyleType.TextShadow ->
