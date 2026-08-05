@@ -1,0 +1,232 @@
+package io.github.teriver.maiupload.core.prober
+
+import android.util.Log
+import io.github.teriver.maiupload.Application.Companion.application
+import io.github.teriver.maiupload.GlobalViewModel
+import androidx.lifecycle.viewModelScope
+import io.github.teriver.maiupload.core.data.chuni.ChuniEnums
+import io.github.teriver.maiupload.core.data.chuni.ChuniScoreManager.writeChuniScoreCache
+import io.github.teriver.maiupload.core.data.maimai.MaimaiEnums
+import io.github.teriver.maiupload.core.data.maimai.MaimaiScoreManager.writeMaimaiScoreCache
+import io.github.teriver.maiupload.core.database.entity.ChuniScoreEntity
+import io.github.teriver.maiupload.core.database.entity.MaimaiScoreEntity
+import io.github.teriver.maiupload.core.utils.ParseScorePageUtil
+import io.github.teriver.maiupload.core.utils.DebugLog
+import io.github.teriver.maiupload.core.utils.WechatRequestUtil.WX_WINDOWS_UA
+import io.ktor.client.HttpClient
+import io.ktor.client.engine.cio.CIO
+import io.ktor.client.plugins.HttpResponseValidator
+import io.ktor.client.plugins.logging.LogLevel
+import io.ktor.client.plugins.logging.Logging
+import io.ktor.client.plugins.logging.Logger
+import io.ktor.client.plugins.HttpTimeout
+import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
+import io.ktor.client.plugins.cookies.AcceptAllCookiesStorage
+import io.ktor.client.plugins.cookies.HttpCookies
+import io.ktor.client.plugins.cookies.get
+import io.ktor.client.request.HttpRequestBuilder
+import io.ktor.client.request.get
+import io.ktor.client.request.headers
+import io.ktor.client.request.post
+import io.ktor.client.request.setBody
+import io.ktor.client.statement.HttpResponse
+import io.ktor.client.statement.bodyAsText
+import io.ktor.http.ContentType
+import io.ktor.http.HttpHeaders
+import io.ktor.http.contentType
+import io.ktor.http.setCookie
+import io.ktor.serialization.kotlinx.json.json
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.serialization.json.Json
+
+val client = HttpClient(CIO) {
+    install(ContentNegotiation) {
+        json(Json {
+            ignoreUnknownKeys = true
+            explicitNulls = false
+        })
+    }
+    install(HttpTimeout) {
+        requestTimeoutMillis = 30000
+        connectTimeoutMillis = 30000
+    }
+    install(HttpCookies) {
+        storage = AcceptAllCookiesStorage()
+    }
+    expectSuccess = false
+    // 全量网络日志：用 Ktor 内置 Logging interceptor + 自定义 logger 写 debug.log
+    install(Logging) {
+        logger = object : Logger {
+            override fun log(message: String) {
+                DebugLog.log("D", "Network", message)
+            }
+        }
+        level = LogLevel.HEADERS
+    }
+    HttpResponseValidator {
+        handleResponseException { cause, _ ->
+            DebugLog.log("E", "ProberUtil", "请求失败: ${cause.message}", cause)
+            DebugLog.log("E", "Network", "请求失败: ${cause.message}", cause)
+        }
+    }
+}
+
+val chuniUrls = listOf(
+    listOf("record/musicGenre/sendBasic", "record/musicGenre/basic"),
+    listOf("record/musicGenre/sendAdvanced", "record/musicGenre/advanced"),
+    listOf("record/musicGenre/sendExpert", "record/musicGenre/expert"),
+    listOf("record/musicGenre/sendMaster", "record/musicGenre/master"),
+    listOf("record/musicGenre/sendUltima", "record/musicGenre/ultima"),
+    listOf(null, "record/worldsEndList/"),
+    listOf(null, "home/playerData/ratingDetailRecent/")
+)
+
+fun sendMessageToUi(message: String) {
+    // 用 GlobalViewModel.viewModelScope（已和 UI 绑定，生命周期受控），
+    // 避免临时 CoroutineScope 在连续发多条提示时被吞或延迟
+    GlobalViewModel.viewModelScope.launch(Dispatchers.Main) {
+        GlobalViewModel.sendAndShowMessage(message)
+    }
+}
+
+suspend fun getMaimaiScoreData(authUrl: String) : List<MaimaiScoreEntity> {
+    val config = application.configManager.config
+    val scores = mutableListOf<MaimaiScoreEntity>()
+    fetchMaimaiScorePage(authUrl) { diff, body ->
+        scores.addAll(ParseScorePageUtil.parseMaimai(body, diff))
+    }
+    if (config.localConfig.cacheScore) {
+        writeMaimaiScoreCache(scores)
+    }
+    return scores
+}
+
+suspend fun fetchMaimaiScorePage(
+    authUrl: String,
+    processBody: suspend (MaimaiEnums.Difficulty, String) -> Unit
+) {
+    val config = application.configManager.config
+    client.get(authUrl) {
+        getDefaultWahlapRequestBuilder()
+    }
+
+    val result = client.get("https://maimai.wahlap.com/maimai-mobile/home/")
+    val homeBody = result.bodyAsText()
+    if (homeBody.contains("错误")) {
+        sendMessageToUi("获取舞萌成绩失败: 登录失败")
+        DebugLog.log("E", "ProberUtil", "登录失败, 抓取成绩停止")
+        return
+    }
+
+    if (config.localConfig.parseMaimaiUserInfo) {
+        val userInfo = ParseScorePageUtil.parseMaimaiHomePage(homeBody)
+        config.userInfo = userInfo
+        
+    }
+
+    for (diff in config.syncConfig.maimaiSyncDifficulty) {
+        val difficulty = MaimaiEnums.Difficulty.getDifficultyWithIndex(diff)
+
+        val fetchUrl = if (config.syncConfig.maimaiIncrementalFetchScore) {
+            "https://maimai.wahlap.com/maimai-mobile/record/" +
+                    "musicSort/search/?search=V&sort=1&playCheck=on&diff="
+        } else {
+            "https://maimai.wahlap.com/maimai-mobile/record/musicGenre/search/?genre=99&diff="
+        }
+
+        DebugLog.log("I", "ProberUtil", "开始抓取${difficulty.diffName}成绩")
+        try {
+            with(client) {
+                val scoreResp = get(
+                    fetchUrl + difficulty.diffName
+                )
+                val body = scoreResp.bodyAsText()
+
+                val data = Regex("<html.*>([\\s\\S]*)</html>")
+                    .find(body)?.groupValues?.get(1)?.replace("\\s+/g", " ")
+
+                processBody(difficulty, data ?: "")
+            }
+        } catch (e: Exception) {
+            DebugLog.log("E", "ProberUtil", "抓取${difficulty.diffName}成绩失败: ${e.message}", e)
+        }
+    }
+}
+
+suspend fun getChuniScoreData(authUrl: String) : List<ChuniScoreEntity> {
+    val config = application.configManager.config
+    val scores = mutableListOf<ChuniScoreEntity>()
+    fetchChuniScores(authUrl) { diff, body ->
+        scores.addAll(ParseScorePageUtil.parseChuni(body, diff))
+    }
+    if (config.localConfig.cacheScore) {
+        writeChuniScoreCache(scores)
+    }
+    return scores
+}
+
+suspend fun fetchChuniScores(
+    authUrl: String,
+    processBody: suspend (ChuniEnums.Difficulty, String) -> Unit
+) {
+    val config = application.configManager.config
+    val result = client.get(authUrl) {
+        getDefaultWahlapRequestBuilder()
+    }
+
+    if (result.bodyAsText().contains("错误")) {
+        DebugLog.log("E", "ProberUtil", "登录公众号失败")
+        sendMessageToUi("获取中二节奏成绩失败: 登录公众号失败")
+        return
+    }
+
+    val token = result.setCookie()["_t"]?.value
+
+    for (diff in config.syncConfig.chuniSyncDifficulty) {
+        val difficulty = ChuniEnums.Difficulty.getDifficultyWithIndex(diff)
+        val url = chuniUrls[diff]
+
+        DebugLog.log("I", "ProberUtil", "开始抓取${difficulty.diffName}成绩")
+
+        try {
+            with(client) {
+                if (url[0] != null) {
+                    post("https://chunithm.wahlap.com/mobile/${url[0]}") {
+                        headers {
+                            append(HttpHeaders.ContentType, "application/x-www-form-urlencoded")
+                        }
+                        contentType(ContentType.Application.FormUrlEncoded)
+                        setBody("genre=99&token=$token")
+                    }
+                }
+
+                val resp: HttpResponse = get("https://chunithm.wahlap.com/mobile/${url[1]}")
+                val body = resp.bodyAsText()
+
+                processBody(difficulty, body)
+            }
+        } catch (e: Exception) {
+            DebugLog.log("E", "ProberUtil", "抓取${difficulty.diffName}成绩失败: ${e.message}", e)
+        }
+    }
+}
+
+private fun HttpRequestBuilder.getDefaultWahlapRequestBuilder() {
+    headers {
+        append(HttpHeaders.Connection, "keep-alive")
+        append("Upgrade-Insecure-Requests", "1")
+        append(HttpHeaders.UserAgent, WX_WINDOWS_UA)
+        append(
+            HttpHeaders.Accept, "text/html,application/xhtml+xml,application/xml;q=0.9," +
+                    "image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9"
+        )
+        append("Sec-Fetch-Site", "none")
+        append("Sec-Fetch-Mode", "navigate")
+        append("Sec-Fetch-User", "?1")
+        append("Sec-Fetch-Dest", "document")
+        append(HttpHeaders.AcceptEncoding, "gzip, deflate, br")
+        append(HttpHeaders.AcceptLanguage, "zh-CN,zh;q=0.9,en-US;q=0.8,en;q=0.7")
+    }
+}

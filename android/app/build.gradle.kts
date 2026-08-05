@@ -24,11 +24,11 @@ val gitCommitId: String = try {
 }
 
 android {
-    namespace = "io.github.skydynamic.maiproberplus"
+    namespace = "io.github.teriver.maiupload"
     compileSdk = 34
 
     defaultConfig {
-        applicationId = "io.github.skydynamic.maiproberplus"
+        applicationId = "io.github.teriver.maiupload"
         minSdk = 31
         targetSdk = 34
         versionName = appVersion
@@ -38,18 +38,17 @@ android {
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
-        // 落雪 OAuth 接入：client_id 与 client_secret 均经环境变量注入，
-        // 由一键构建脚本填充，不上传脚本、不入仓库。缺失则构建中止。
+        // 落雪 OAuth 接入：client_id 经环境变量注入，由一键构建脚本填充，
+        // 不上传脚本、不入仓库。缺失则构建中止。
+        // 使用 PKCE（公共客户端），无需 client_secret。
         val lxnsOAuthClientId = System.getenv("LXNS_OAUTH_CLIENT_ID")
-        val lxnsOAuthClientSecret = System.getenv("LXNS_OAUTH_CLIENT_SECRET")
-        if (lxnsOAuthClientId.isNullOrEmpty() || lxnsOAuthClientSecret.isNullOrEmpty()) {
+        if (lxnsOAuthClientId.isNullOrEmpty()) {
             throw GradleException(
-                "缺少 LXNS_OAUTH_CLIENT_ID / LXNS_OAUTH_CLIENT_SECRET 环境变量，" +
+                "缺少 LXNS_OAUTH_CLIENT_ID 环境变量，" +
                     "请通过一键构建脚本填充后再构建。"
             )
         }
         buildConfigField("String", "LXNS_OAUTH_CLIENT_ID", "\"$lxnsOAuthClientId\"")
-        buildConfigField("String", "LXNS_OAUTH_CLIENT_SECRET", "\"$lxnsOAuthClientSecret\"")
     }
 
     buildTypes {
@@ -96,7 +95,7 @@ android {
         val variant = this
         variant.outputs.all {
             if (this is com.android.build.gradle.internal.api.BaseVariantOutputImpl) {
-                outputFileName = "MaiProberPlus-${versionName}-universal-${variant.buildType.name}.apk"
+                outputFileName = "Maiupload-${versionName}-universal-${variant.buildType.name}.apk"
             }
         }
     }

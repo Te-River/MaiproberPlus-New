@@ -21,8 +21,8 @@ PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 RELEASE_DIR="$PROJECT_ROOT/release"
 KEYSTORE="$SCRIPT_DIR/local-release.keystore"
 KEYSTORE_ALIAS="release"
-KEYSTORE_STORE_PASS="maiproberplus_local_release"
-KEYSTORE_KEY_PASS="maiproberplus_local_release"
+KEYSTORE_STORE_PASS="maiupload_local_release"
+KEYSTORE_KEY_PASS="maiupload_local_release"
 
 # --- 环境校验 ---
 if [[ -z "${JAVA_HOME:-}" ]]; then
@@ -36,7 +36,7 @@ if ! "$JAVA_HOME/bin/java" -version 2>&1 | grep -qiE "version \"21"; then
   exit 1
 fi
 if [[ -z "${ANDROID_HOME:-}" ]]; then
-  echo "❌ ANDROID_HOME 未设置。请 export ANDROID_HOME=\"$LOCALAPPDATA/Android/Sdk\"（或你的 SDK 路径）后再跑此脚本。"
+  echo "❌ ANDROID_HOME 未设置。请 export ANDROID_HOME=\"\$LOCALAPPDATA/Android/Sdk\"（或你的 SDK 路径）后再跑此脚本。"
   exit 1
 fi
 if [[ ! -d "$ANDROID_HOME/platforms" ]]; then
@@ -62,7 +62,7 @@ else
       -keystore "$KEYSTORE" \
       -storepass "$KEYSTORE_STORE_PASS" \
       -keypass "$KEYSTORE_KEY_PASS" \
-      -dname "CN=MaiProberPlus, OU=Local, O=Local, L=Local, ST=Local, C=CN" \
+      -dname "CN=Maiupload, OU=Local, O=Local, L=Local, ST=Local, C=CN" \
       > /dev/null 2>&1
     echo "   keystore 已生成：$KEYSTORE"
   else

@@ -43,7 +43,7 @@
 
         <provider
             android:name="androidx.core.content.FileProvider"
-            android:authorities="io.github.skydynamic.maiproberplus.fileprovider"
+            android:authorities="io.github.teriver.maiupload.fileprovider"
             android:exported="false"
             android:grantUriPermissions="true">
             <meta-data
