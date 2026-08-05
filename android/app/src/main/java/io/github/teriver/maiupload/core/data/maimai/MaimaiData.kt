@@ -69,23 +69,20 @@ class MaimaiData {
         var MAIMAI_SONG_ALIASES = readMaimaiSongAliases()
 
         @OptIn(DelicateCoroutinesApi::class)
-        fun syncMaimaiSongList() {
+        suspend fun syncMaimaiSongList() {
             val context = Application.application
-            var listFile = File(context.filesDir, "maimai_song_list.json")
+            val listFile = File(context.filesDir, "maimai_song_list.json")
 
-            GlobalScope.launch(Dispatchers.IO) {
-                val result =
-                    client.get("https://maimai.lxns.net/api/v0/maimai/song/list?notes=true")
-                listFile.deleteOnExit()
-                listFile.createNewFile()
-                val bufferedWriter =
-                    context.openFileOutput("maimai_song_list.json", Context.MODE_PRIVATE)
-                        .bufferedWriter()
-                bufferedWriter.write(result.bodyAsText())
-                bufferedWriter.close()
+            try {
+                val result = client.get("https://maimai.lxns.net/api/v0/maimai/song/list?notes=true")
+                context.openFileOutput("maimai_song_list.json", Context.MODE_PRIVATE).use { out ->
+                    out.bufferedWriter().use { it.write(result.bodyAsText()) }
+                }
+                // 刷新成功后再重读，确保 MAIMAI_SONG_LIST 用的是最新表
+                MAIMAI_SONG_LIST = readMaimaiSongList()
+            } catch (e: Exception) {
+                // 网络失败保留旧表，不阻断后续流程
             }
-
-            MAIMAI_SONG_LIST = readMaimaiSongList()
         }
 
         private fun readMaimaiSongList(): List<SongInfo> {

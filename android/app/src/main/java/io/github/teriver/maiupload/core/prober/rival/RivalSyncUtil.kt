@@ -228,6 +228,11 @@ object RivalSyncUtil {
             sendMessageToUi("Rival 设置缺失必填项：游戏服务器网址/哈希/加密 Key/加密 IV")
             return emptyList()
         }
+        // 拉取前同步刷新曲目表，确保 Rival 返回的 musicId 能在最新表里查到 title；
+        // 否则旧表/缺表时 toEntity 里 title 会降级成 Unknown(...)，且后续
+        // getLevelValue/getChartVersion 按 title 反查也连锁丢失。
+        onProgress("正在同步最新曲目表...")
+        MaimaiData.syncMaimaiSongList()
         // gameServerUrl（含尾斜杠）+ apiHash 拼成完整请求 URL；
         // 对齐 Mizuki lib_game._call_api：url = f"{base_url}{api_hash}"，
         // cryptObfuscate 只参与 apiHash 计算，不拼进 URL（硬塞 obfuscate 段服务器返回 200 空体）。
@@ -303,7 +308,17 @@ object RivalSyncUtil {
 
     /** 转本地 entity：musicId + level + achievement → MaimaiScoreEntity。 */
     private fun toEntity(musicId: Int, d: UserRivalMusicDetail): MaimaiScoreEntity {
-        val info = MaimaiData.MAIMAI_SONG_LIST.find { it.id == musicId }
+        // 落雪 musicId 特殊处理（与 uploadScores filter 一致）：
+        //   标准谱面：id 原样（< 10000）
+        //   DX 谱面：服务器返 base+10000，落雪表存的是 base → 取余查
+        //   宴会场：id 原样（>= 100000，落雪表也存原样）
+        // 不做取余的话 DX 谱面全查不到 → title 降级 Unknown，level/version 连锁丢
+        val baseId = when {
+            musicId >= 100000 -> musicId
+            musicId >= 10000 -> musicId % 10000
+            else -> musicId
+        }
+        val info = MaimaiData.MAIMAI_SONG_LIST.find { it.id == baseId }
         val title = info?.title ?: "Unknown($musicId)"
         val diff = MaimaiEnums.Difficulty.getDifficultyWithIndex(d.level)
         // type 优先按 difficulty 在 standard/dx 里能否找到对应 chart 决定
@@ -317,7 +332,9 @@ object RivalSyncUtil {
             songId = musicId,
             title = title,
             level = MaimaiData.getLevelValue(title, diff, type),
-            achievement = d.achievement,
+            // Rival 返回百分比小数（如 99.1523），entity 存放大 10000 倍的整形式（991523），
+            // 与水鱼/落雪上传时 /10000 还原的方向一致；不放大则显示成百万级荒谬值
+            achievement = d.achievement * 10000,
             dxScore = d.deluxscoreMax,
             rating = 0,
             version = version,
