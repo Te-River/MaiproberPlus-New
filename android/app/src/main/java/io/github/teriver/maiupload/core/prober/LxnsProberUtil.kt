@@ -270,7 +270,15 @@ class LxnsProberUtil : IProberUtil {
                 sendMessageToUi("获取舞萌数据失败, API返回体: ${response.bodyAsText()}")
                 return emptyList()
             }
-            val body = response.body<LxnsGetMaimaiScoreResponse>()
+            val body = try {
+                response.body<LxnsGetMaimaiScoreResponse>()
+            } catch (e: Throwable) {
+                // 502 Bad Gateway 等非 JSON 体反序列化抛 NoTransformationFoundException（继承 Throwable），
+                // 不兜住会冒泡到 Uncaught exception 闪退；这里捕获后给清晰提示
+                DebugLog.log("E", "LxnsProberUtil", "获取舞萌数据反序列化失败: ${e.message}", e)
+                sendMessageToUi("获取舞萌数据失败：落雪服务器返回非预期内容（可能 502/维护中），请稍后重试")
+                return emptyList()
+            }
             val parseList = arrayListOf<MaimaiScoreEntity>()
             body.data.forEach {
                 val type = MaimaiEnums.SongType.getSongTypeByName(it.type)
@@ -312,7 +320,19 @@ class LxnsProberUtil : IProberUtil {
             val response = client.get("$baseApiUrl/api/v0/user/chunithm/player/scores") {
                 header(auth.first, auth.second)
             }
-            val body = response.body<LxnsGetChuniScoreResponse>()
+            if (response.status.value != 200) {
+                sendMessageToUi("获取中二数据失败, API返回体: ${response.bodyAsText()}")
+                return emptyList()
+            }
+            val body = try {
+                response.body<LxnsGetChuniScoreResponse>()
+            } catch (e: Throwable) {
+                // 502 Bad Gateway 等非 JSON 体反序列化抛 NoTransformationFoundException（继承 Throwable），
+                // 不兜住会冒泡到 Uncaught exception 闪退；这里捕获后给清晰提示
+                DebugLog.log("E", "LxnsProberUtil", "获取中二数据反序列化失败: ${e.message}", e)
+                sendMessageToUi("获取中二数据失败：落雪服务器返回非预期内容（可能 502/维护中），请稍后重试")
+                return emptyList()
+            }
             val parseList = addChuniScoreDataToList(
                 scores = body.data,
                 list = arrayListOf(),
