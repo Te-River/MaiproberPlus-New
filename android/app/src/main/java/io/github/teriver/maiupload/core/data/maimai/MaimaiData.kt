@@ -32,12 +32,12 @@ class MaimaiData {
 
     @Serializable
     data class Notes(
-        val total: Int,
-        val tap: Int,
-        val hold: Int,
-        val slide: Int,
-        val touch: Int,
-        @SerialName("break") val breakTotal: Int
+        val total: Int = 0,
+        val tap: Int = 0,
+        val hold: Int = 0,
+        val slide: Int = 0,
+        val touch: Int = 0,
+        @SerialName("break") val breakTotal: Int = 0,
     )
 
     @Serializable
