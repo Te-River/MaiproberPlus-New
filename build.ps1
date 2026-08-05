@@ -17,6 +17,17 @@
 #   Keystore + passwords are committed to the repo so all builders produce
 #   identically-signed APKs. Override via env vars if needed.
 
+# --- 参数声明（必须在脚本身最前面，PowerShell 规定）---
+# 用法：
+#   build.ps1            → 默认 snapshot
+#   build.ps1 -rel       → 显式构建 Release
+#   build.ps1 debug      → debug
+#   build.ps1 snapshot   → snapshot
+param(
+    [switch]$rel,
+    [Parameter(Position = 0)][string]$Target
+)
+
 $ErrorActionPreference = "Stop"
 $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $AndroidDir = Join-Path $ScriptDir "android"
@@ -46,16 +57,11 @@ $env:LXNS_OAUTH_CLIENT_ID = $LxnsOAuthClientId
 Write-Host ("[INFO] LXNS_OAUTH_CLIENT_ID={0}..." -f $LxnsOAuthClientId.Substring(0, [Math]::Min(8, $LxnsOAuthClientId.Length))) -ForegroundColor Cyan
 
 # --- Build target ---
-# -rel 开关：显式构建 Release（开发者正式发版用）
+# -rel 开关（param 声明）：显式构建 Release（开发者正式发版用）
 # 不带 -rel 时：位置参数指定 debug/snapshot；无参数默认 snapshot（CI/in-app updater）
-$IsRelease = $args -contains "-rel"
-$Positional = @($args | Where-Object { $_ -ne "-rel" })
-
-if ($IsRelease) {
+if ($rel) {
     $Target = "release"
-} elseif ($Positional.Count -ge 1) {
-    $Target = $Positional[0]
-} else {
+} elseif ([string]::IsNullOrEmpty($Target)) {
     $Target = "snapshot"
 }
 
