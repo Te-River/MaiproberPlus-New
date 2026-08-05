@@ -52,7 +52,11 @@ class MaimaiData {
     )
 
     @Serializable
-    data class SongDifficulties(val standard: List<SongDiffculty>, val dx: List<SongDiffculty>)
+    data class SongDifficulties(
+        val standard: List<SongDiffculty> = emptyList(),
+        val dx: List<SongDiffculty> = emptyList(),
+        val utage: List<SongDiffculty> = emptyList(),
+    )
 
     @Serializable
     data class SongInfo(
@@ -110,14 +114,19 @@ class MaimaiData {
         ): Float {
             val difficulties = MAIMAI_SONG_LIST.find { it.title == title }?.difficulties
             val idx = diffculty.diffIndex
-            return if (type == MaimaiEnums.SongType.DX) {
-                val dx = difficulties?.dx
-                if (dx != null && idx < dx.size) dx[idx].levelValue else 0F
-            } else if (type == MaimaiEnums.SongType.STANDARD) {
-                val std = difficulties?.standard
-                if (std != null && idx < std.size) std[idx].levelValue else 0F
-            } else {
-                0F
+            return when (type) {
+                MaimaiEnums.SongType.DX -> {
+                    val dx = difficulties?.dx
+                    if (dx != null && idx < dx.size) dx[idx].levelValue else 0F
+                }
+                MaimaiEnums.SongType.STANDARD -> {
+                    val std = difficulties?.standard
+                    if (std != null && idx < std.size) std[idx].levelValue else 0F
+                }
+                MaimaiEnums.SongType.UTAGE -> {
+                    val utg = difficulties?.utage
+                    if (utg != null && idx < utg.size) utg[idx].levelValue else 0F
+                }
             }
         }
 
@@ -128,14 +137,19 @@ class MaimaiData {
         ): Int {
             val difficulties = MAIMAI_SONG_LIST.find { it.title == title }?.difficulties
             val idx = diffculty.diffIndex
-            return if (type == MaimaiEnums.SongType.DX) {
-                val dx = difficulties?.dx
-                if (dx != null && idx < dx.size) dx[idx].version else 0
-            } else if (type == MaimaiEnums.SongType.STANDARD) {
-                val std = difficulties?.standard
-                if (std != null && idx < std.size) std[idx].version else 0
-            } else {
-                0
+            return when (type) {
+                MaimaiEnums.SongType.DX -> {
+                    val dx = difficulties?.dx
+                    if (dx != null && idx < dx.size) dx[idx].version else 0
+                }
+                MaimaiEnums.SongType.STANDARD -> {
+                    val std = difficulties?.standard
+                    if (std != null && idx < std.size) std[idx].version else 0
+                }
+                MaimaiEnums.SongType.UTAGE -> {
+                    val utg = difficulties?.utage
+                    if (utg != null && idx < utg.size) utg[idx].version else 0
+                }
             }
         }
 
@@ -146,14 +160,19 @@ class MaimaiData {
         ): Int {
             val difficulties = MAIMAI_SONG_LIST.find { it.title == title }?.difficulties
             val idx = diffculty.diffIndex
-            return if (type == MaimaiEnums.SongType.DX) {
-                val dx = difficulties?.dx
-                if (dx != null && idx < dx.size) dx[idx].notes?.total ?: 0 else 0
-            } else if (type == MaimaiEnums.SongType.STANDARD) {
-                val std = difficulties?.standard
-                if (std != null && idx < std.size) std[idx].notes?.total ?: 0 else 0
-            } else {
-                0
+            return when (type) {
+                MaimaiEnums.SongType.DX -> {
+                    val dx = difficulties?.dx
+                    if (dx != null && idx < dx.size) dx[idx].notes?.total ?: 0 else 0
+                }
+                MaimaiEnums.SongType.STANDARD -> {
+                    val std = difficulties?.standard
+                    if (std != null && idx < std.size) std[idx].notes?.total ?: 0 else 0
+                }
+                MaimaiEnums.SongType.UTAGE -> {
+                    val utg = difficulties?.utage
+                    if (utg != null && idx < utg.size) utg[idx].notes?.total ?: 0 else 0
+                }
             }
         }
 

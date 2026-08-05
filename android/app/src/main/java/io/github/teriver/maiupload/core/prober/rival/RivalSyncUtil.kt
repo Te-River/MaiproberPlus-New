@@ -321,11 +321,12 @@ object RivalSyncUtil {
         val info = MaimaiData.MAIMAI_SONG_LIST.find { it.id == baseId }
         val title = info?.title ?: "Unknown($musicId)"
         val diff = MaimaiEnums.Difficulty.getDifficultyWithIndex(d.level)
-        // type 优先按 difficulty 在 standard/dx 里能否找到对应 chart 决定
+        // type 优先按 difficulty 在 standard/dx/utage 里能否找到对应 chart 决定
         val type = info?.let { song ->
             val std = song.difficulties.standard.getOrNull(d.level)
             if (std != null) MaimaiEnums.SongType.STANDARD
             else song.difficulties.dx.getOrNull(d.level)?.let { MaimaiEnums.SongType.DX }
+            ?: song.difficulties.utage.getOrNull(d.level)?.let { MaimaiEnums.SongType.UTAGE }
         } ?: MaimaiEnums.SongType.STANDARD
         val version = info?.let { MaimaiData.getChartVersion(it.title, diff, type) } ?: 0
         return MaimaiScoreEntity(
