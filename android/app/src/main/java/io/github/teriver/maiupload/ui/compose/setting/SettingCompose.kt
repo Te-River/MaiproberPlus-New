@@ -765,13 +765,6 @@ fun SettingCompose() {
                         importLauncher.launch(arrayOf("application/json", "*/*"))
                     }
 
-                    HorizontalDivider(
-                        modifier = Modifier
-                            .padding(horizontal = 16.dp, vertical = 8.dp),
-                        color = MaterialTheme.colorScheme.outlineVariant,
-                        thickness = 1.dp
-                    )
-
                     TextButtonItem(
                         modifier = Modifier
                             .padding(start = 15.dp, top = 5.dp, end = 15.dp, bottom = 5.dp)
