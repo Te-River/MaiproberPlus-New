@@ -9,6 +9,7 @@
 .cxx
 local.properties
 /.kotlin
+**/.kotlin
 
 # 本地构建产物与签名材料（build.sh 生成；build.ps1 已入仓库供大家共用）
 /release/
