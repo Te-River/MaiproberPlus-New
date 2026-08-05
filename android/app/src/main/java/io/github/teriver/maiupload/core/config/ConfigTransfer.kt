@@ -52,14 +52,27 @@ object ConfigTransfer {
 
     private val json = Json { ignoreUnknownKeys = true }
 
-    /** 可导出的配置子集（不含任何 token / OAuth 令牌 / Rival 鉴权参数）。 */
+    /**
+     * 可导出的配置子集 —— 按四大类完整备份：
+     * 1. 成绩抓取设置：SyncConfig + RivalSyncConfig（含 userId/token 缓存）
+     * 2. 成绩展示设置：ScoreDisplayType + ScoreStyleType
+     * 3. 本地设置：LocalConfig
+     * 4. 用户信息：UserInfo
+     *
+     * **不导出**：水鱼/落雪 token、落雪 OAuth 令牌、PKCE verifier。
+     */
     @Serializable
     data class ExportableConfig(
+        // 1. 成绩抓取设置
         var syncConfig: SyncConfig = SyncConfig(),
-        var userInfo: UserInfo = UserInfo(),
+        var rivalSyncConfig: RivalSyncConfig = RivalSyncConfig(),
+        // 2. 成绩展示设置
         var scoreDisplayType: ScoreDisplayType = ScoreDisplayType.Small,
         var scoreStyleType: ScoreStyleType = ScoreStyleType.ColorOverlay,
+        // 3. 本地设置
         var localConfig: LocalConfig = LocalConfig(),
+        // 4. 用户信息
+        var userInfo: UserInfo = UserInfo(),
     )
 
     @Serializable
@@ -135,15 +148,20 @@ object ConfigTransfer {
 
     // ---- 导出 ----
 
-    /** 从当前配置抽取可导出子集。 */
+    /** 从当前配置抽取可导出子集（四大类完整备份）。 */
     private fun snapshot(): ExportableConfig {
         val cfg = application.configManager.config
         return ExportableConfig(
+            // 1. 成绩抓取设置
             syncConfig = cfg.syncConfig,
-            userInfo = cfg.userInfo,
+            rivalSyncConfig = cfg.rivalSyncConfig,
+            // 2. 成绩展示设置
             scoreDisplayType = cfg.scoreDisplayType,
             scoreStyleType = cfg.scoreStyleType,
+            // 3. 本地设置
             localConfig = cfg.localConfig,
+            // 4. 用户信息
+            userInfo = cfg.userInfo,
         )
     }
 
@@ -212,13 +230,18 @@ object ConfigTransfer {
             // JSON 解析含 ignoreUnknownKeys = true，未定义字段自动忽略
             val p = json.decodeFromString(ExportableConfig.serializer(), payloadJson)
 
-            // 仅覆盖可导出字段
+            // 仅覆盖可导出字段（四大类完整覆盖，不动 token / OAuth 令牌 / PKCE verifier）
             val cfg = application.configManager.config
+            // 1. 成绩抓取设置
             cfg.syncConfig = p.syncConfig
-            cfg.userInfo = p.userInfo
+            cfg.rivalSyncConfig = p.rivalSyncConfig
+            // 2. 成绩展示设置
             cfg.scoreDisplayType = p.scoreDisplayType
             cfg.scoreStyleType = p.scoreStyleType
+            // 3. 本地设置
             cfg.localConfig = p.localConfig
+            // 4. 用户信息
+            cfg.userInfo = p.userInfo
             application.configManager.save()
 
             if (versionTooHigh) ImportResult.VersionTooHigh(bundle.appVersion)

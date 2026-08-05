@@ -686,87 +686,6 @@ fun SettingCompose() {
                         thickness = 1.dp
                     )
 
-                    TextButtonItem(
-                        modifier = Modifier
-                            .padding(start = 15.dp, top = 5.dp, end = 15.dp, bottom = 5.dp)
-                            .fillMaxWidth()
-                            .wrapContentHeight(),
-                        title = "检查更新",
-                        description = "检测Github Release是否存在更新"
-                    ) {
-                        GlobalViewModel.viewModelScope.launch(Dispatchers.IO) {
-                            try {
-                                val release = if (config.localConfig.checkSnapshotUpdate) {
-                                    checkFullUpdate()
-                                } else {
-                                    checkReleaseUpdate()
-                                }
-                                withContext(Dispatchers.Main) {
-                                    if (release != null) {
-                                        val downloadFile =
-                                            Environment.getExternalStoragePublicDirectory(
-                                                Environment.DIRECTORY_DOWNLOADS
-                                            )
-                                        val newVersionFile =
-                                            downloadFile.resolve(release.assets.first().name)
-                                        if (newVersionFile.exists()) {
-                                            GlobalViewModel.newVersionApkUri =
-                                                FileProvider.getUriForFile(
-                                                    application,
-                                                    application.packageName + ".fileprovider",
-                                                    newVersionFile
-                                                )
-                                            GlobalViewModel.showInstallApkDialog = true
-                                        } else {
-                                            GlobalViewModel.setLatestReleaseAndShowDialog(release)
-                                        }
-                                    } else {
-                                        GlobalViewModel.setLatestReleaseAndShowDialog(release)
-                                    }
-                                }
-                            } catch (e: Exception) {
-                                withContext(Dispatchers.Main) {
-                                    GlobalViewModel.sendAndShowMessage("检查更新失败: ${e.message}")
-                                }
-                            }
-                        }
-                    }
-
-                    TextButtonItem(
-                        modifier = Modifier
-                            .padding(start = 15.dp, top = 5.dp, end = 15.dp, bottom = 5.dp)
-                            .fillMaxWidth()
-                            .wrapContentHeight(),
-                        title = "项目仓库",
-                        description = "项目的GitHub仓库"
-                    ) {
-                        val uri = Uri.parse("https://github.com/Te-River/Maiupload")
-                        val intent = Intent(Intent.ACTION_VIEW, uri)
-                        intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
-                        application.startActivity(intent)
-                    }
-
-                    TextButtonItem(
-                        modifier = Modifier
-                            .padding(start = 15.dp, top = 5.dp, end = 15.dp, bottom = 5.dp)
-                            .fillMaxWidth()
-                            .wrapContentHeight(),
-                        title = "反馈问题",
-                        description = "跳转到Github Issues界面进行问题反馈"
-                    ) {
-                        val uri = Uri.parse("https://github.com/Te-River/Maiupload/issues")
-                        val intent = Intent(Intent.ACTION_VIEW, uri)
-                        intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
-                        application.startActivity(intent)
-                    }
-
-                    HorizontalDivider(
-                        modifier = Modifier
-                            .padding(horizontal = 16.dp, vertical = 8.dp),
-                        color = MaterialTheme.colorScheme.outlineVariant,
-                        thickness = 1.dp
-                    )
-
                     // 导出配置：写入 filesDir，用 ACTION_SEND 分享给他人
                     val exportContext = LocalContext.current
                     TextButtonItem(
@@ -844,6 +763,87 @@ fun SettingCompose() {
                         description = "从分享的配置文件导入设置（验签防篡改）"
                     ) {
                         importLauncher.launch(arrayOf("application/json", "*/*"))
+                    }
+
+                    HorizontalDivider(
+                        modifier = Modifier
+                            .padding(horizontal = 16.dp, vertical = 8.dp),
+                        color = MaterialTheme.colorScheme.outlineVariant,
+                        thickness = 1.dp
+                    )
+
+                    TextButtonItem(
+                        modifier = Modifier
+                            .padding(start = 15.dp, top = 5.dp, end = 15.dp, bottom = 5.dp)
+                            .fillMaxWidth()
+                            .wrapContentHeight(),
+                        title = "检查更新",
+                        description = "检测Github Release是否存在更新"
+                    ) {
+                        GlobalViewModel.viewModelScope.launch(Dispatchers.IO) {
+                            try {
+                                val release = if (config.localConfig.checkSnapshotUpdate) {
+                                    checkFullUpdate()
+                                } else {
+                                    checkReleaseUpdate()
+                                }
+                                withContext(Dispatchers.Main) {
+                                    if (release != null) {
+                                        val downloadFile =
+                                            Environment.getExternalStoragePublicDirectory(
+                                                Environment.DIRECTORY_DOWNLOADS
+                                            )
+                                        val newVersionFile =
+                                            downloadFile.resolve(release.assets.first().name)
+                                        if (newVersionFile.exists()) {
+                                            GlobalViewModel.newVersionApkUri =
+                                                FileProvider.getUriForFile(
+                                                    application,
+                                                    application.packageName + ".fileprovider",
+                                                    newVersionFile
+                                                )
+                                            GlobalViewModel.showInstallApkDialog = true
+                                        } else {
+                                            GlobalViewModel.setLatestReleaseAndShowDialog(release)
+                                        }
+                                    } else {
+                                        GlobalViewModel.setLatestReleaseAndShowDialog(release)
+                                    }
+                                }
+                            } catch (e: Exception) {
+                                withContext(Dispatchers.Main) {
+                                    GlobalViewModel.sendAndShowMessage("检查更新失败: ${e.message}")
+                                }
+                            }
+                        }
+                    }
+
+                    TextButtonItem(
+                        modifier = Modifier
+                            .padding(start = 15.dp, top = 5.dp, end = 15.dp, bottom = 5.dp)
+                            .fillMaxWidth()
+                            .wrapContentHeight(),
+                        title = "项目仓库",
+                        description = "项目的GitHub仓库"
+                    ) {
+                        val uri = Uri.parse("https://github.com/Te-River/Maiupload")
+                        val intent = Intent(Intent.ACTION_VIEW, uri)
+                        intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                        application.startActivity(intent)
+                    }
+
+                    TextButtonItem(
+                        modifier = Modifier
+                            .padding(start = 15.dp, top = 5.dp, end = 15.dp, bottom = 5.dp)
+                            .fillMaxWidth()
+                            .wrapContentHeight(),
+                        title = "反馈问题",
+                        description = "跳转到Github Issues界面进行问题反馈"
+                    ) {
+                        val uri = Uri.parse("https://github.com/Te-River/Maiupload/issues")
+                        val intent = Intent(Intent.ACTION_VIEW, uri)
+                        intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                        application.startActivity(intent)
                     }
 
                     Text(
