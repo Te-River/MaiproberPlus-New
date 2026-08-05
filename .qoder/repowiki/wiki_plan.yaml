@@ -1,0 +1,35 @@
+version: 1
+
+scope:
+  include: []
+  exclude:
+    - "android/.gradle/**"
+    - "android/.kotlin/**"
+    - "android/app/build/**"
+    - "android/app/schemas/**"
+    - "android/buildSrc/**"
+    - "release/**"
+    - "doc_images/**"
+    - "web/image_id_finder/node_modules/**"
+    - "web/image_id_finder/dist/**"
+    - "android/app/src/main/assets/**"
+    - "android/app/src/main/res/mipmap-*/**"
+    - "android/app/src/main/res/drawable/**"
+
+repowiki:
+  template: ""
+  notes:
+    - text: "本应用是 Maiupload（MaiProberPlus）：Android 应用通过本地 VPN 拦截微信游戏流量，解析 maimai DX / CHUNITHM 成绩页面并上传至水鱼（DivingFish）、落雪（LXNS）查分器或本地 Room 数据库。应用包名/applicationId 为 io.github.teriver.maiupload。"
+    - text: "vpn/ 目录下的 VPN/TCP/DNS 隧道栈是纯 Java 实现，属于刻意设计，不要建议转换为 Kotlin；它通过 core/proxy 的 InterceptHandler.onAuthHook（@JvmStatic 静态桥）回调 Kotlin 层，文档需强调此 Java↔Kotlin 边界。"
+    - text: "Room DAO 包名拼写为 inteface（interface 的笔误），是既有约定，文档中按原样引用，不要标注为错误或建议改名。"
+    - text: "构建有三种类型：debug、release（混淆+资源压缩）、snapshot（克隆自 release，供 CI 与应用内更新使用）；CI 工作流构建 assembleSnapshot。构建需 LXNS_OAUTH_CLIENT_ID 环境变量，缺失则构建中止。"
+    - text: "GlobalViewModel 是进程级单例 object，持有 VPN 状态等全局 UI 状态，不是按屏幕创建的 ViewModel；Application 是自定义子类，持有 configManager、proberContext、Room db 与通知渠道。"
+    - text: "web/image_id_finder 是独立的 Vue 3 + Vite + Element Plus 工具（pnpm 管理），与 Android 应用无依赖关系，文档中应与 Android 主体分开描述。"
+    - text: "assets 下的 maimai/chunithm 图片素材（评级/段位/数字 PNG）在运行时经 Application.getAssetAsString/getImageFromAssets 按游戏专属路径读取，用于成绩图片生成。"
+  documents: []
+
+knowledgecard:
+  notes:
+    - text: "Android 应用源码根为 android/app/src/main/java/io/github/teriver/maiupload/，知识卡按以下边界拆分：vpn（纯 Java VPN 栈，含 core/dns/tcpip/tunnel 子包）；core/proxy（NanoHTTPD HTTP 服务与 InterceptHandler 桥接）；core/prober（IProberUtil 后端：DivingFish/LXNS/Local，含 rival 同步与 models）；core/data/maimai 与 core/data/chuni（游戏数据模型与成绩管理）；core/database（Room 实体/DAO/迁移，DAO 包名为 inteface）；core/config（ConfigStorage，config.json）；core/utils；ui/compose（按 sync/setting/bests/scores-{maimai,chuni,common} 划分）。"
+    - text: "receiver、Application.kt、MainActivity.kt、Constant.kt 归入应用入口/基础设施类知识卡。"
+    - text: "web/image_id_finder 作为单独知识卡处理，技术栈 Vue 3 + Vite + UnoCSS + Element Plus，与 Android 应用相互独立。"
