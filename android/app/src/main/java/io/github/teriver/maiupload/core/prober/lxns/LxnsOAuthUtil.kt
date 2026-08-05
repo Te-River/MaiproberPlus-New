@@ -97,8 +97,16 @@ object LxnsOAuthUtil {
      * 拼好带 PKCE 参数的授权链接。
      * 生成随机 code_verifier 存入 ConfigStorage，计算 code_challenge (S256)，
      * 授权链接带 code_challenge + code_challenge_method=S256。
+     *
+     * client_id 若为占位符（placeholder / 空），落雪服务器会返「无效的应用」，
+     * 在这里前置拦截给用户清晰提示，避免一头雾水跑到服务器报错。
      */
     fun getAuthorizeUrl(): String {
+        val clientId = BuildConfig.LXNS_OAUTH_CLIENT_ID
+        if (clientId.isBlank() || clientId.equals("placeholder", ignoreCase = true)) {
+            sendMessageToUi("本构建未配置落雪 OAuth client_id，请用正式构建版本")
+            return ""
+        }
         val codeVerifier = generateCodeVerifier()
         val codeChallenge = generateCodeChallenge(codeVerifier)
 
@@ -109,7 +117,7 @@ object LxnsOAuthUtil {
 
         val scopeEncoded = SCOPE.replace(" ", "+")
         return "$AUTHORIZE_URL?response_type=code" +
-            "&client_id=${BuildConfig.LXNS_OAUTH_CLIENT_ID}" +
+            "&client_id=$clientId" +
             "&redirect_uri=${REDIRECT_URI.replace(":", "%3A")}" +
             "&scope=$scopeEncoded" +
             "&code_challenge=$codeChallenge" +
@@ -125,6 +133,12 @@ object LxnsOAuthUtil {
             sendMessageToUi("授权码不能为空")
             return false
         }
+        // client_id 占位符/空：换 token 也会被落雪拒「无效的应用」，前置拦截
+        val clientId = BuildConfig.LXNS_OAUTH_CLIENT_ID
+        if (clientId.isBlank() || clientId.equals("placeholder", ignoreCase = true)) {
+            sendMessageToUi("本构建未配置落雪 OAuth client_id，请用正式构建版本")
+            return false
+        }
         val cfg = application.configManager.config
         val codeVerifier = cfg.lxnsOAuthPkceVerifier
         if (codeVerifier.isBlank()) {
@@ -132,7 +146,7 @@ object LxnsOAuthUtil {
             return false
         }
         val body = mapOf(
-            "client_id" to BuildConfig.LXNS_OAUTH_CLIENT_ID,
+            "client_id" to clientId,
             "grant_type" to "authorization_code",
             "code" to code,
             "redirect_uri" to REDIRECT_URI,
@@ -160,12 +174,18 @@ object LxnsOAuthUtil {
         ) {
             return cfg.lxnsOAuthAccessToken
         }
+        // client_id 占位符/空：刷新也会被落雪拒「令牌失效」，前置拦截给清晰提示
+        val clientId = BuildConfig.LXNS_OAUTH_CLIENT_ID
+        if (clientId.isBlank() || clientId.equals("placeholder", ignoreCase = true)) {
+            sendMessageToUi("本构建未配置落雪 OAuth client_id，无法刷新令牌，请用正式构建版本")
+            return null
+        }
         if (cfg.lxnsOAuthRefreshToken.isBlank()) {
             return null
         }
         // 刷新 token 也不需要 client_secret（PKCE 公共客户端）
         val body = mapOf(
-            "client_id" to BuildConfig.LXNS_OAUTH_CLIENT_ID,
+            "client_id" to clientId,
             "grant_type" to "refresh_token",
             "refresh_token" to cfg.lxnsOAuthRefreshToken
         )
