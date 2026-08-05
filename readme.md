@@ -63,11 +63,11 @@ Rival 同步支持直接拉取指定 **对手 (Rival)** 的舞萌 DX 成绩并�
 
 | 字段 | 说明 |
 |------|------|
-| 游戏服务器网址 (gameServerUrl) | 含尾斜杠的基础 URL，如 `https://<game-server-url>` |
+| 游戏服务器网址 (gameServerUrl) | 含尾斜杠的基础 URL，在 Rival 设置页自填 |
 | 哈希 (apiHash) | 端点哈希值 `md5("GetUserRivalMusicApiMaimaiChn" + 混淆参数)`，需手动计算填写 |
-| 混淆参数 (cryptObfuscate) | 加密混淆参数，如 `<crypt-obfuscate>`（只参与哈希计算，不拼进 URL） |
+| 混淆参数 (cryptObfuscate) | 加密混淆参数，只参与哈希计算，不拼进 URL |
 | 加密 Key / 加密 IV | AES-CBC 加密参数 |
-| 编码版本 (cryptEncoding) | `Mai-Encoding` 请求头， |
+| 编码版本 (cryptEncoding) | `Mai-Encoding` 请求头，在 Rival 设置页自填 |
 | 鉴权网址 (authServerUrl) | QR 鉴权节点，直接使用不拼接 |
 | Auth Salt | 鉴权签名盐 |
 
