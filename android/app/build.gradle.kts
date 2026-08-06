@@ -149,6 +149,7 @@ dependencies {
 
     implementation(libs.kotlinx.coroutines.core)
     implementation(libs.kotlinx.serialization.json)
+    implementation(libs.kotlinx.serialization.protobuf)
 
     implementation(libs.coil.compose)
     implementation(libs.coil.network.ktor3)

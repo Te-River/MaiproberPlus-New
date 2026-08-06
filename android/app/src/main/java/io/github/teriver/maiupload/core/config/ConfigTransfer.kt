@@ -6,6 +6,8 @@ import io.github.teriver.maiupload.BuildConfig
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.protobuf.ProtoBuf
+import kotlinx.serialization.ExperimentalSerializationApi
 import java.security.MessageDigest
 import java.util.zip.Deflater
 import java.util.zip.Inflater
@@ -116,15 +118,14 @@ object ConfigTransfer {
     // ---- AES-GCM 加密/解密（固定密钥）----
 
     /**
-     * 加密明文：返回 "base64(iv):base64(ciphertext)"。
-     * @param compress true 时先 deflate raw 压缩明文再加密（v2 新格式，文件更小）；
-     *                false 时直接加密明文（v1 旧格式，兼容旧导出文件）。
+     * 加密明文字节：返回 "base64(iv):base64(ciphertext)"。
+     * @param compress true 时先 deflate raw 压缩再加密（v2 新格式，文件更小）；
+     *                false 时直接加密（v1 旧格式，兼容旧导出文件）。
      * @param legacyBase64 true 用旧 v1 的 NO_WRAP base64（兼容旧文件），
      *                     false 用 v2 的 URL_SAFE 无填充省尾部字节。
      */
-    private fun aesGcmEncrypt(plaintext: String, compress: Boolean, legacyBase64: Boolean): String {
-        val raw = if (compress) deflateRaw(plaintext.toByteArray(Charsets.UTF_8))
-                  else plaintext.toByteArray(Charsets.UTF_8)
+    private fun aesGcmEncryptBytes(plaintext: ByteArray, compress: Boolean, legacyBase64: Boolean): String {
+        val raw = if (compress) deflateRaw(plaintext) else plaintext
         val cipher = Cipher.getInstance(TRANSFORMATION)
         cipher.init(Cipher.ENCRYPT_MODE, aesKey())
         val iv = cipher.iv
@@ -135,24 +136,37 @@ object ConfigTransfer {
         return "$ivB64:$ctB64"
     }
 
-    private fun aesGcmDecrypt(ciphertext: String, compressed: Boolean): String {
+    /** 旧 String 入口的薄壳：转 UTF-8 字节后走 [aesGcmEncryptBytes]（v1 兼容路径用）。 */
+    private fun aesGcmEncrypt(plaintext: String, compress: Boolean, legacyBase64: Boolean): String =
+        aesGcmEncryptBytes(plaintext.toByteArray(Charsets.UTF_8), compress, legacyBase64)
+
+    /**
+     * 解密密文成原始字节。
+     * @param compressed true 时解密后 inflate raw 解压（v2 新格式）；
+     *                  false 时直接返回解密字节（v1 旧格式）。
+     * @return 解密（+ 解压）后的原始字节；失败返回 null。
+     */
+    private fun aesGcmDecryptBytes(ciphertext: String, compressed: Boolean): ByteArray? {
         val parts = ciphertext.split(":")
-        if (parts.size != 2) return ""
+        if (parts.size != 2) return null
         return try {
             // 兼容旧文件：v1 用 NO_PADDING 填充的 base64 也能被 URL_SAFE|NO_PADDING 解
             val iv = Base64.decode(parts[0], B64_FLAGS)
-            if (iv.size != IV_LENGTH_BYTES) return ""
+            if (iv.size != IV_LENGTH_BYTES) return null
             val ct = Base64.decode(parts[1], B64_FLAGS)
             val cipher = Cipher.getInstance(TRANSFORMATION)
             val spec = GCMParameterSpec(GCM_TAG_LENGTH_BITS, iv)
             cipher.init(Cipher.DECRYPT_MODE, aesKey(), spec)
             val raw = cipher.doFinal(ct)
-            if (compressed) String(inflateRaw(raw), Charsets.UTF_8)
-            else String(raw, Charsets.UTF_8)
+            if (compressed) inflateRaw(raw) else raw
         } catch (e: Exception) {
-            ""
+            null
         }
     }
+
+    /** 旧 String 入口的薄壳：解密后转 UTF-8 字符串（v1 兼容路径用）。 */
+    private fun aesGcmDecrypt(ciphertext: String, compressed: Boolean): String =
+        aesGcmDecryptBytes(ciphertext, compressed)?.let { String(it, Charsets.UTF_8) } ?: ""
 
     // ---- deflate raw 压缩/解压（无 zlib header/trailer，省 6 字节）----
 
@@ -216,14 +230,16 @@ object ConfigTransfer {
 
     /**
      * 导出可分享配置为 JSON 字符串。
-     * payload 用固定密钥 AES-GCM 加密（先 deflate raw 压缩，文件更小），HMAC 签密文块。
+     * payload 用固定密钥 AES-GCM 加密（先 ProtoBuf 编码 → deflate raw 压缩，文件更小），HMAC 签密文块。
      * appVersion 跟随当前应用版本（BuildConfig.VERSION_NAME），导入时低版本导入高版本会拒绝。
-     * 一律导出 version=2 新格式；import 兼容读旧 v1。
+     * 一律导出 version=2 新格式（ProtoBuf+deflate）；import 兼容读旧 v1（JSON 无压缩）。
      */
+    @OptIn(ExperimentalSerializationApi::class)
     fun export(): String {
         val payload = snapshot()
-        val payloadJson = json.encodeToString(ExportableConfig.serializer(), payload)
-        val encryptedPayload = aesGcmEncrypt(payloadJson, compress = true, legacyBase64 = false)
+        // ProtoBuf 编码：字段名换数字 tag，源头比 JSON 小约 40%
+        val payloadBytes = ProtoBuf.encodeToByteArray(ExportableConfig.serializer(), payload)
+        val encryptedPayload = aesGcmEncryptBytes(payloadBytes, compress = true, legacyBase64 = false)
         val hmac = hmacSha256(encryptedPayload)
         val bundle = ExportBundle(
             version = 2,
@@ -232,6 +248,7 @@ object ConfigTransfer {
             hmac = hmac,
             payload = encryptedPayload,
         )
+        // bundle 围栏仍走 JSON（结构固定且小，ProtoBuf 对这种元数据无收益）
         return json.encodeToString(ExportBundle.serializer(), bundle)
     }
 
@@ -259,44 +276,55 @@ object ConfigTransfer {
      * 但返回 [ImportResult.VersionTooHigh] 提示用户注意兼容性。
      * 低于或等于当前版本则返回 [ImportResult.Success]。
      */
+    @OptIn(ExperimentalSerializationApi::class)
     fun import(jsonString: String): ImportResult {
         return try {
             val bundle = json.decodeFromString(ExportBundle.serializer(), jsonString)
-            // 按 version 分流：v1 旧格式（无压缩）/ v2 新格式（deflate raw 压缩），其余拒绝
-            val isV2: Boolean = when (bundle.version) {
-                1 -> false
-                2 -> true
+            // 按 version 分流：
+            //   v1 = 旧格式（JSON 明文，无压缩）—— legacy 兼容
+            //   v2 = 新格式（ProtoBuf 编码 + deflate raw 压缩）
+            //   其他版本拒绝
+            when (bundle.version) {
+                1, 2 -> Unit
                 else -> return ImportResult.Corrupted
             }
             if (bundle.payload.isEmpty()) return ImportResult.Corrupted
 
-            // HMAC 验签密文块，防篡改
+            // HMAC 验签密文块，防篡改（v1/v2 验签流程一致）
             val expectedHmac = hmacSha256(bundle.payload)
             if (expectedHmac != bundle.hmac) return ImportResult.Corrupted
 
-            // �验签通过，固定密钥 AES-GCM 解密（v2 解密后 inflate 解压）
-            val payloadJson = aesGcmDecrypt(bundle.payload, compressed = isV2)
-            if (payloadJson.isEmpty()) return ImportResult.Corrupted
+            // 验签通过，固定密钥 AES-GCM 解密。
+            //   v1：明文是 JSON 字符串（用 aesGcmDecrypt 薄壳转 String）
+            //   v2：解密后 inflate raw 解压得 ProtoBuf 字节（用 aesGcmDecryptBytes 拿 ByteArray）
+            val payloadObj: ExportableConfig = if (bundle.version == 1) {
+                val payloadJson = aesGcmDecrypt(bundle.payload, compressed = false)
+                if (payloadJson.isEmpty()) return ImportResult.Corrupted
+                // JSON 解析含 ignoreUnknownKeys = true，未定义字段自动忽略
+                json.decodeFromString(ExportableConfig.serializer(), payloadJson)
+            } else {
+                // v2：ProtoBuf 解码（缺字段自动取默认值，向前兼容）
+                val payloadBytes = aesGcmDecryptBytes(bundle.payload, compressed = true)
+                    ?: return ImportResult.Corrupted
+                ProtoBuf.decodeFromByteArray(ExportableConfig.serializer(), payloadBytes)
+            }
 
             // 版本标记：高版本配置仍允许导入（未定义字段自动忽略），稍后返回警告
             val versionTooHigh = bundle.appVersion.isNotEmpty() &&
                 compareVersion(bundle.appVersion, BuildConfig.VERSION_NAME) > 0
 
-            // JSON 解析含 ignoreUnknownKeys = true，未定义字段自动忽略
-            val p = json.decodeFromString(ExportableConfig.serializer(), payloadJson)
-
             // 仅覆盖可导出字段（四大类完整覆盖，不动 token / OAuth 令牌 / PKCE verifier）
             val cfg = application.configManager.config
             // 1. 成绩抓取设置
-            cfg.syncConfig = p.syncConfig
-            cfg.rivalSyncConfig = p.rivalSyncConfig
+            cfg.syncConfig = payloadObj.syncConfig
+            cfg.rivalSyncConfig = payloadObj.rivalSyncConfig
             // 2. 成绩展示设置
-            cfg.scoreDisplayType = p.scoreDisplayType
-            cfg.scoreStyleType = p.scoreStyleType
+            cfg.scoreDisplayType = payloadObj.scoreDisplayType
+            cfg.scoreStyleType = payloadObj.scoreStyleType
             // 3. 本地设置
-            cfg.localConfig = p.localConfig
+            cfg.localConfig = payloadObj.localConfig
             // 4. 用户信息
-            cfg.userInfo = p.userInfo
+            cfg.userInfo = payloadObj.userInfo
             application.configManager.save()
 
             if (versionTooHigh) ImportResult.VersionTooHigh(bundle.appVersion)
