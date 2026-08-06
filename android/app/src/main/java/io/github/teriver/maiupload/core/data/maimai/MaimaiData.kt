@@ -90,17 +90,27 @@ class MaimaiData {
         }
 
         private fun readMaimaiSongList(): List<SongInfo> {
-            return JSON.decodeFromString<LxnsSongListResponse>(
-                Application.application.getFilesDirInputStream("maimai_song_list.json")
-                    .bufferedReader().use { it.readText() }
-            ).songs
+            return try {
+                JSON.decodeFromString<LxnsSongListResponse>(
+                    Application.application.getFilesDirInputStream("maimai_song_list.json")
+                        .bufferedReader().use { it.readText() }
+                ).songs
+            } catch (e: Exception) {
+                // 文件不存在/为空/损坏时降级为空表，避免 companion object <clinit> 抛
+                // ExceptionInInitializerError 导致整个 MaimaiData 类不可用
+                emptyList()
+            }
         }
 
         private fun readMaimaiSongAliases(): List<Aliases> {
-            return JSON.decodeFromString<SongsAliases>(
-                Application.application.getFilesDirInputStream("maimai_song_aliases.json")
-                    .bufferedReader().use { it.readText() }
-            ).aliases
+            return try {
+                JSON.decodeFromString<SongsAliases>(
+                    Application.application.getFilesDirInputStream("maimai_song_aliases.json")
+                        .bufferedReader().use { it.readText() }
+                ).aliases
+            } catch (e: Exception) {
+                emptyList()
+            }
         }
 
         fun getSongIdFromTitle(title: String?): Int {

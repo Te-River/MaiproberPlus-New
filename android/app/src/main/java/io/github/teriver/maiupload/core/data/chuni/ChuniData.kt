@@ -56,37 +56,43 @@ class ChuniData {
         var CHUNI_SONG_ALIASES = readChuniSongAliases()
 
         @OptIn(DelicateCoroutinesApi::class)
-        fun syncMaimaiSongList() {
+        suspend fun syncMaimaiSongList() {
             val context = Application.application
-            var listFile = File(context.filesDir, "chuni_song_list.json")
 
-            GlobalScope.launch(Dispatchers.IO) {
-                val result =
-                    client.get("https://maimai.lxns.net/api/v0/chunithm/song/list?notes=true")
-                listFile.deleteOnExit()
-                listFile.createNewFile()
-                val bufferedWriter =
-                    context.openFileOutput("chuni_song_list.json", Context.MODE_PRIVATE)
-                        .bufferedWriter()
-                bufferedWriter.write(result.bodyAsText())
-                bufferedWriter.close()
+            try {
+                val result = client.get("https://maimai.lxns.net/api/v0/chunithm/song/list?notes=true")
+                context.openFileOutput("chuni_song_list.json", Context.MODE_PRIVATE).use { out ->
+                    out.bufferedWriter().use { it.write(result.bodyAsText()) }
+                }
+                // 下载完成后再重读，确保 CHUNI_SONG_LIST 用的是最新表
+                CHUNI_SONG_LIST = readChuniSongList()
+            } catch (e: Exception) {
+                // 网络失败保留旧表，不阻断后续流程
             }
-
-            CHUNI_SONG_LIST = readChuniSongList()
         }
 
         private fun readChuniSongList(): List<SongInfo> {
-            return JSON.decodeFromString<LxnsSongListResponse>(
-                Application.application.getFilesDirInputStream("chuni_song_list.json")
-                    .bufferedReader().use { it.readText() }
-            ).songs
+            return try {
+                JSON.decodeFromString<LxnsSongListResponse>(
+                    Application.application.getFilesDirInputStream("chuni_song_list.json")
+                        .bufferedReader().use { it.readText() }
+                ).songs
+            } catch (e: Exception) {
+                // 文件不存在/为空/损坏时降级为空表，避免 companion object <clinit> 抛
+                // ExceptionInInitializerError 导致整个 ChuniData 类不可用
+                emptyList()
+            }
         }
 
         private fun readChuniSongAliases(): List<Aliases> {
-            return JSON.decodeFromString<SongsAliases>(
-                Application.application.getFilesDirInputStream("chuni_song_aliases.json")
-                    .bufferedReader().use { it.readText() }
-            ).aliases
+            return try {
+                JSON.decodeFromString<SongsAliases>(
+                    Application.application.getFilesDirInputStream("chuni_song_aliases.json")
+                        .bufferedReader().use { it.readText() }
+                ).aliases
+            } catch (e: Exception) {
+                emptyList()
+            }
         }
 
         fun getSongIdFromTitle(title: String): Int {

@@ -679,6 +679,9 @@ private fun stopVpnService(activity: Activity) {
 }
 
 private fun checkResourceComplate(context: Context): Boolean {
-    return context.filesDir.resolve("maimai_song_list.json").exists()
-            || context.filesDir.resolve("chuni_song_list.json").exists()
+    // 必须两个曲目表都存在且非空（0 字节的空文件会导致 getLevelValue 返回 0 → DX Rating 全 0）
+    val maimai = context.filesDir.resolve("maimai_song_list.json")
+    val chuni = context.filesDir.resolve("chuni_song_list.json")
+    return (maimai.exists() && maimai.length() > 0)
+            && (chuni.exists() && chuni.length() > 0)
 }
