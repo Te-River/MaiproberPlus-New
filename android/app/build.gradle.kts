@@ -49,6 +49,8 @@ android {
             )
         }
         buildConfigField("String", "LXNS_OAUTH_CLIENT_ID", "\"$lxnsOAuthClientId\"")
+        // 全局默认 false，snapshot buildType 覆写为 true
+        buildConfigField("boolean", "IS_SNAPSHOT", "false")
     }
 
     buildTypes {
