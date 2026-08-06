@@ -335,8 +335,10 @@ object RivalSyncUtil {
         val rating = if (type == MaimaiEnums.SongType.UTAGE) {
             0
         } else {
-            // d.achievement 是百分比浮点（如 99.1523 表示 99.1523%），calcMaimaiRating 接收百分比字符串
-            calcMaimaiRating(d.achievement.toString(), levelValue)
+            // d.achievement 是放大 10000 倍的整形式（如 1008661 表示 100.8661%），
+            // calcMaimaiRating 接收百分比字符串（如 "100.8661"），先除 10000 还原
+            val achievementPercent = d.achievement / 10000.0f
+            calcMaimaiRating(achievementPercent.toString(), levelValue)
         }
         return MaimaiScoreEntity(
             songId = musicId,
