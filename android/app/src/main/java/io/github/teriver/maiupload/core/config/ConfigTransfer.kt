@@ -7,6 +7,8 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import java.security.MessageDigest
+import java.util.zip.Deflater
+import java.util.zip.Inflater
 import javax.crypto.Cipher
 import javax.crypto.Mac
 import javax.crypto.spec.GCMParameterSpec
@@ -49,6 +51,8 @@ object ConfigTransfer {
     private const val TRANSFORMATION = "AES/GCM/NoPadding"
     private const val GCM_TAG_LENGTH_BITS = 128
     private const val IV_LENGTH_BYTES = 12
+    // v2：base64 用 URL_SAFE 无填充，省掉尾部 '=' 填充字节
+    private const val B64_FLAGS = Base64.URL_SAFE or Base64.NO_PADDING
 
     private val json = Json { ignoreUnknownKeys = true }
 
@@ -111,30 +115,75 @@ object ConfigTransfer {
 
     // ---- AES-GCM 加密/解密（固定密钥）----
 
-    private fun aesGcmEncrypt(plaintext: String): String {
+    /**
+     * 加密明文：返回 "base64(iv):base64(ciphertext)"。
+     * @param compress true 时先 deflate raw 压缩明文再加密（v2 新格式，文件更小）；
+     *                false 时直接加密明文（v1 旧格式，兼容旧导出文件）。
+     * @param legacyBase64 true 用旧 v1 的 NO_WRAP base64（兼容旧文件），
+     *                     false 用 v2 的 URL_SAFE 无填充省尾部字节。
+     */
+    private fun aesGcmEncrypt(plaintext: String, compress: Boolean, legacyBase64: Boolean): String {
+        val raw = if (compress) deflateRaw(plaintext.toByteArray(Charsets.UTF_8))
+                  else plaintext.toByteArray(Charsets.UTF_8)
         val cipher = Cipher.getInstance(TRANSFORMATION)
         cipher.init(Cipher.ENCRYPT_MODE, aesKey())
         val iv = cipher.iv
-        val ct = cipher.doFinal(plaintext.toByteArray(Charsets.UTF_8))
-        val ivB64 = Base64.encodeToString(iv, Base64.NO_WRAP)
-        val ctB64 = Base64.encodeToString(ct, Base64.NO_WRAP)
+        val ct = cipher.doFinal(raw)
+        val flags = if (legacyBase64) Base64.NO_WRAP else B64_FLAGS
+        val ivB64 = Base64.encodeToString(iv, flags)
+        val ctB64 = Base64.encodeToString(ct, flags)
         return "$ivB64:$ctB64"
     }
 
-    private fun aesGcmDecrypt(ciphertext: String): String {
+    private fun aesGcmDecrypt(ciphertext: String, compressed: Boolean): String {
         val parts = ciphertext.split(":")
         if (parts.size != 2) return ""
         return try {
-            val iv = Base64.decode(parts[0], Base64.NO_WRAP)
+            // 兼容旧文件：v1 用 NO_PADDING 填充的 base64 也能被 URL_SAFE|NO_PADDING 解
+            val iv = Base64.decode(parts[0], B64_FLAGS)
             if (iv.size != IV_LENGTH_BYTES) return ""
-            val ct = Base64.decode(parts[1], Base64.NO_WRAP)
+            val ct = Base64.decode(parts[1], B64_FLAGS)
             val cipher = Cipher.getInstance(TRANSFORMATION)
             val spec = GCMParameterSpec(GCM_TAG_LENGTH_BITS, iv)
             cipher.init(Cipher.DECRYPT_MODE, aesKey(), spec)
-            String(cipher.doFinal(ct), Charsets.UTF_8)
+            val raw = cipher.doFinal(ct)
+            if (compressed) String(inflateRaw(raw), Charsets.UTF_8)
+            else String(raw, Charsets.UTF_8)
         } catch (e: Exception) {
             ""
         }
+    }
+
+    // ---- deflate raw 压缩/解压（无 zlib header/trailer，省 6 字节）----
+
+    private fun deflateRaw(input: ByteArray): ByteArray {
+        val deflater = Deflater(Deflater.BEST_COMPRESSION, true) // raw, 无 zlib 头
+        deflater.setInput(input)
+        deflater.finish()
+        val out = java.io.ByteArrayOutputStream()
+        val buf = ByteArray(512)
+        while (!deflater.finished()) {
+            val n = deflater.deflate(buf)
+            out.write(buf, 0, n)
+        }
+        deflater.end()
+        return out.toByteArray()
+    }
+
+    private fun inflateRaw(input: ByteArray): ByteArray {
+        val inflater = Inflater(true) // raw, 对应 deflate 的 nowrap=true
+        inflater.setInput(input)
+        val out = java.io.ByteArrayOutputStream()
+        val buf = ByteArray(512)
+        while (!inflater.finished()) {
+            val n = inflater.inflate(buf)
+            if (n == 0) {
+                if (inflater.needsInput() || inflater.needsDictionary()) break
+            }
+            out.write(buf, 0, n)
+        }
+        inflater.end()
+        return out.toByteArray()
     }
 
     // ---- HMAC-SHA256（固定密钥）----
@@ -167,16 +216,17 @@ object ConfigTransfer {
 
     /**
      * 导出可分享配置为 JSON 字符串。
-     * payload 用固定密钥 AES-GCM 加密，HMAC 签密文块。
+     * payload 用固定密钥 AES-GCM 加密（先 deflate raw 压缩，文件更小），HMAC 签密文块。
      * appVersion 跟随当前应用版本（BuildConfig.VERSION_NAME），导入时低版本导入高版本会拒绝。
+     * 一律导出 version=2 新格式；import 兼容读旧 v1。
      */
     fun export(): String {
         val payload = snapshot()
         val payloadJson = json.encodeToString(ExportableConfig.serializer(), payload)
-        val encryptedPayload = aesGcmEncrypt(payloadJson)
+        val encryptedPayload = aesGcmEncrypt(payloadJson, compress = true, legacyBase64 = false)
         val hmac = hmacSha256(encryptedPayload)
         val bundle = ExportBundle(
-            version = 1,
+            version = 2,
             exportedAt = System.currentTimeMillis(),
             appVersion = BuildConfig.VERSION_NAME,
             hmac = hmac,
@@ -212,15 +262,20 @@ object ConfigTransfer {
     fun import(jsonString: String): ImportResult {
         return try {
             val bundle = json.decodeFromString(ExportBundle.serializer(), jsonString)
-            if (bundle.version != 1) return ImportResult.Corrupted
+            // 按 version 分流：v1 旧格式（无压缩）/ v2 新格式（deflate raw 压缩），其余拒绝
+            val isV2: Boolean = when (bundle.version) {
+                1 -> false
+                2 -> true
+                else -> return ImportResult.Corrupted
+            }
             if (bundle.payload.isEmpty()) return ImportResult.Corrupted
 
             // HMAC 验签密文块，防篡改
             val expectedHmac = hmacSha256(bundle.payload)
             if (expectedHmac != bundle.hmac) return ImportResult.Corrupted
 
-            // 验签通过，固定密钥 AES-GCM 解密
-            val payloadJson = aesGcmDecrypt(bundle.payload)
+            // �验签通过，固定密钥 AES-GCM 解密（v2 解密后 inflate 解压）
+            val payloadJson = aesGcmDecrypt(bundle.payload, compressed = isV2)
             if (payloadJson.isEmpty()) return ImportResult.Corrupted
 
             // 版本标记：高版本配置仍允许导入（未定义字段自动忽略），稍后返回警告
