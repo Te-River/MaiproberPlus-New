@@ -1,6 +1,7 @@
 package io.github.teriver.maiupload.core.utils
 
 import android.util.Log
+import io.github.teriver.maiupload.BuildConfig
 import io.github.teriver.maiupload.Application
 import java.io.File
 import java.io.PrintWriter
@@ -18,10 +19,14 @@ import java.util.Locale
  *
  * 文件结构：每条一行，含时间戳 / 级别 / 线程 / TAG / message / stack trace（多行缩进）。
  * 单文件最大 [MAX_FILE_BYTES]，超限自动回滚保留尾部一半重写避免无限膨胀。
+ *
+ * 仅快照构建（BuildConfig.IS_SNAPSHOT）写 debug.log；release/debug 构建不写，
+ * 避免正式版膨胀存储。所有日志文件统一放在 filesDir/log/ 子目录下。
  */
 object DebugLog {
     private const val FILE_NAME = "debug.log"
-    private const val MAX_FILE_BYTES = 5 * 1024 * 1024L  // 5MB，debug 级比 error 级宽容
+    private const val LOG_DIR = "log"
+    private const val MAX_FILE_BYTES = 2 * 1024 * 1024L  // 2MB，超限回滚
 
     private val dateFormat = SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS", Locale.CHINA)
     private val lock = Any()
@@ -41,6 +46,8 @@ object DebugLog {
                 "E" -> Log.e(tag, message, throwable)
                 else -> Log.d(tag, message, throwable)
             }
+            // 仅快照构建写 debug.log；其余构建只走 logcat
+            if (!BuildConfig.IS_SNAPSHOT) return
             val entry = buildString {
                 append("[")
                 append(dateFormat.format(Date()))
@@ -102,9 +109,12 @@ object DebugLog {
         }
     }
 
-    private fun logFile(): File =
-        File(Application.application.filesDir, FILE_NAME)
+    private fun logDir(): File =
+        File(Application.application.filesDir, LOG_DIR).also { it.mkdirs() }
 
-    /** 返回 debug.log 绝对路径（filesDir/debug.log），便用户翻全 app 活动复盘。 */
+    private fun logFile(): File =
+        File(logDir(), FILE_NAME)
+
+    /** 返回 debug.log 绝对路径（filesDir/log/debug.log），便用户翻全 app 活动复盘。 */
     fun logFilePath(): String = logFile().absolutePath
 }

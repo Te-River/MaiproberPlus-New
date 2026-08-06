@@ -12,6 +12,7 @@ import io.github.teriver.maiupload.core.prober.client
 import io.github.teriver.maiupload.core.prober.sendMessageToUi
 import io.github.teriver.maiupload.core.utils.ErrorLog
 import io.github.teriver.maiupload.core.utils.DebugLog
+import io.github.teriver.maiupload.core.utils.calcMaimaiRating
 import io.github.teriver.maiupload.ui.compose.sync.SyncViewModel
 import io.ktor.client.request.header
 import io.ktor.client.request.post
@@ -329,16 +330,24 @@ object RivalSyncUtil {
             ?: song.difficulties.utage.getOrNull(d.level)?.let { MaimaiEnums.SongType.UTAGE }
         } ?: MaimaiEnums.SongType.STANDARD
         val version = info?.let { MaimaiData.getChartVersion(it.title, diff, type) } ?: 0
+        val levelValue = MaimaiData.getLevelValue(title, diff, type)
+        // 宴会谱面(UTAGE)不参与 DX Rating 计算，rating 保持 0
+        val rating = if (type == MaimaiEnums.SongType.UTAGE) {
+            0
+        } else {
+            // d.achievement 是百分比浮点（如 99.1523 表示 99.1523%），calcMaimaiRating 接收百分比字符串
+            calcMaimaiRating(d.achievement.toString(), levelValue)
+        }
         return MaimaiScoreEntity(
             songId = musicId,
             title = title,
-            level = MaimaiData.getLevelValue(title, diff, type),
+            level = levelValue,
             // Mizuki/Artemis 数据库里 achievement 字段就是 Integer，存放大 10000 倍的整形式
             // （如 991523 表示 99.1523%）。Rival 响应返的已是该整形式，直接存，
             // 与水鱼/落雪上传时 /10000 还原的方向一致。上次多乘一次 10000 致显示成荒谬值。
             achievement = d.achievement,
             dxScore = d.deluxscoreMax,
-            rating = 0,
+            rating = rating,
             version = version,
             type = type,
             diff = diff,

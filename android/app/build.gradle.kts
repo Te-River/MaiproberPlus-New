@@ -79,6 +79,7 @@ android {
 
         create("snapshot") {
             initWith(getByName("release"))
+            buildConfigField("boolean", "IS_SNAPSHOT", "true")
         }
     }
 

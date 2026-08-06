@@ -1,6 +1,5 @@
 package io.github.teriver.maiupload.core.utils
 
-import android.content.Context
 import android.os.Build
 import android.util.Log
 import io.github.teriver.maiupload.Application
@@ -12,18 +11,21 @@ import java.util.Date
 import java.util.Locale
 
 /**
- * 报错记录到本地 log 文件（filesDir/error.log）。
+ * 报错记录到本地 log 文件（filesDir/log/error.log）。
  * 全 App 报错（网络错误、API 异常、未捕获崩溃）都经 [logError] 写入，
  * 便于用户反馈时附带日志复现问题。
  *
  * 文件结构：每条一行，含时间戳 / 线程 / TAG / message / stack trace（多行缩进）。
  * 单文件最大 [MAX_FILE_BYTES]，超限自动回滚重写避免无限膨胀。
+ *
+ * 所有日志文件统一放在 filesDir/log/ 子目录下。
  */
 object ErrorLog {
     private const val TAG = "ErrorLog"
     private const val FILE_NAME = "error.log"
     private const val SYNC_FILE_NAME = "sync.log"
-    private const val MAX_FILE_BYTES = 2 * 1024 * 1024L  // 2MB
+    private const val LOG_DIR = "log"
+    private const val MAX_FILE_BYTES = 2 * 1024 * 1024L  // 2MB，超限回滚
 
     private val dateFormat = SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS", Locale.CHINA)
 
@@ -128,15 +130,18 @@ object ErrorLog {
         }
     }
 
+    private fun logDir(): File =
+        File(Application.application.filesDir, LOG_DIR).also { it.mkdirs() }
+
     private fun logFile(): File =
-        File(Application.application.filesDir, FILE_NAME)
+        File(logDir(), FILE_NAME)
 
     private fun syncLogFile(): File =
-        File(Application.application.filesDir, SYNC_FILE_NAME)
+        File(logDir(), SYNC_FILE_NAME)
 
     /** 给设置页/调试入口用的：返回 log 文件绝对路径，方便用户分享。 */
     fun logFilePath(): String = logFile().absolutePath
 
-    /** 返回同步 log 文件绝对路径（filesDir/sync.log），方便用户翻同步流程复盘。 */
+    /** 返回同步 log 文件绝对路径（filesDir/log/sync.log），方便用户翻同步流程复盘。 */
     fun syncLogFilePath(): String = syncLogFile().absolutePath
 }
